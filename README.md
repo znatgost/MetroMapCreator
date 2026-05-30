@@ -34,8 +34,8 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/yourname/metro-creator.git
-cd metro-creator
+git clone https://github.com/znatgost/MetroMapCreator.git
+cd MetroMapCreator
 # Open index.html in your browser — that's it.
 ```
 
@@ -95,7 +95,7 @@ Click ⚙ in the header to toggle:
 ```
 MIT License
 
-Copyright (c) 2025
+Copyright (c) 2026
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
