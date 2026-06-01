@@ -22,11 +22,11 @@
   --font-mono: 'DM Mono', 'Courier New', monospace;
 }
 
-html, body { height: 100%; overflow: hidden; }
+html, body { height: 100%; height: -webkit-fill-available; overflow: hidden; }
 body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--text); font-size: 14px; }
 
 /* ── Layout ─────────────────────────────────────────────────── */
-.app { display: flex; flex-direction: column; height: 100vh; }
+.app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 
 .header {
   height: var(--header-h);
@@ -366,6 +366,7 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
 /* ── Mobile bar ─────────────────────────────────────────────── */
 .mobile-bar {
   display: none; height: var(--mobile-bar-h);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--sidebar-bg); border-top: 1px solid var(--sidebar-border);
   padding: 6px 8px; align-items: center; justify-content: space-around;
   flex-shrink: 0;
@@ -422,6 +423,7 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
   .mobile-bar   { display: flex; }
   .header-center { display: none; }
   :root { --header-h: 48px; }
+  .canvas-wrap  { padding-bottom: var(--mobile-bar-h); }
 }
 @media (max-width: 480px) {
   .brand-name { display: none; }
@@ -523,3 +525,40 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
 .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .legend-name { font-size: 12px; font-weight: 500; color: var(--text); flex: 1; }
 .legend-count { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+/* ── Color palette (line props) ─────────────────────────────── */
+.color-palette {
+  display: grid;
+  grid-template-columns: repeat(8, 20px);
+  gap: 5px;
+  padding: 4px 0;
+}
+.clr-swatch {
+  width: 20px; height: 20px; border-radius: 50%;
+  cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+.clr-swatch:hover { transform: scale(1.2); }
+.clr-swatch.active {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px white, 0 0 0 4px currentColor, 0 2px 6px rgba(0,0,0,0.2);
+  outline: 2px solid transparent;
+  filter: brightness(1.05);
+}
+
+/* ── BG presets (settings) ──────────────────────────────────── */
+.bg-presets {
+  display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0;
+}
+.bg-swatch {
+  width: 28px; height: 28px; border-radius: 8px;
+  cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
+.bg-swatch:hover { transform: scale(1.1); }
+.bg-swatch.active {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px white, 0 0 0 3.5px #3D72F6;
+}

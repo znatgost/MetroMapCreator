@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Metro Map Creator</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -112,6 +112,9 @@
           <g id="layer-ui"></g>
         </g>
       </svg>
+
+      <!-- Legend overlay -->
+      <div class="map-legend" id="map-legend"></div>
 
       <!-- Empty state -->
       <div class="empty-state" id="empty-state">
@@ -246,18 +249,25 @@
           </label>
         </div>
         <div class="settings-group">
-          <div class="settings-group-title">Canvas</div>
-          <label class="settings-row">
-            <span class="settings-label">Background color</span>
-            <input type="color" id="cfg-bg-color" value="#EFF2F7" class="settings-color">
-          </label>
+          <div class="settings-group-title">Canvas Background</div>
+          <div class="bg-presets">
+            <span class="bg-swatch active" data-bg="#EFF2F7" style="background:#EFF2F7" title="Light gray"></span>
+            <span class="bg-swatch" data-bg="#FFFFFF" style="background:#FFFFFF;border:1px solid #E5E9F0" title="White"></span>
+            <span class="bg-swatch" data-bg="#F8F4F0" style="background:#F8F4F0" title="Warm white"></span>
+            <span class="bg-swatch" data-bg="#F0F4F0" style="background:#F0F4F0" title="Mint"></span>
+            <span class="bg-swatch" data-bg="#EEF2FF" style="background:#EEF2FF" title="Lavender"></span>
+            <span class="bg-swatch" data-bg="#FFF7ED" style="background:#FFF7ED" title="Peach"></span>
+            <span class="bg-swatch" data-bg="#1C2333" style="background:#1C2333" title="Dark navy"></span>
+            <span class="bg-swatch" data-bg="#0D1117" style="background:#0D1117" title="Dark"></span>
+            <span class="bg-swatch" data-bg="#1A1A2E" style="background:#1A1A2E" title="Midnight"></span>
+            <span class="bg-swatch" data-bg="#0F2027" style="background:#0F2027" title="Deep ocean"></span>
+            <span class="bg-swatch" data-bg="#2D1B69" style="background:#2D1B69" title="Deep purple"></span>
+            <span class="bg-swatch" data-bg="#1B2838" style="background:#1B2838" title="Steel dark"></span>
+          </div>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- LEGEND OVERLAY -->
-  <div class="map-legend" id="map-legend"></div>
 
 </div><!-- /app -->
 
