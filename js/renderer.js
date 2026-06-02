@@ -148,7 +148,7 @@ const Renderer = {
       };
 
       // White knockout stroke
-      const shadow = this.el('text', { ...base, fill: 'none', stroke: 'white', 'stroke-width': '4', 'paint-order': 'stroke' });
+      const shadow = this.el('text', { ...base, fill: 'none', stroke: 'white', 'stroke-width': '3.5', 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'paint-order': 'stroke' });
       shadow.textContent = s.name;
 
       const text = this.el('text', { ...base, fill: '#1C2333' });

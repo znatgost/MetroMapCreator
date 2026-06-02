@@ -66,7 +66,15 @@ const UI = {
     bind('cfg-legend',        'legend',       () => { this.renderLegend(); });
     bind('cfg-legend-lines',  'legendLines',  () => { this.renderLegend(); });
     bind('cfg-legend-counts', 'legendCounts', () => { this.renderLegend(); });
-    bind('cfg-bg-color',      'bgColor',      () => { this._applyBg(); });
+
+    document.querySelectorAll('.bg-swatch').forEach(s => {
+      s.addEventListener('click', () => {
+        this.mapCfg.bgColor = s.dataset.bg;
+        document.querySelectorAll('.bg-swatch').forEach(x => x.classList.remove('active'));
+        s.classList.add('active');
+        this._applyBg();
+      });
+    });
   },
 
   _applyGrid() {
@@ -310,10 +318,9 @@ const UI = {
       <hr class="prop-divider">
       <div class="prop-row">
         <label class="prop-label">Color</label>
-        <div class="color-row">
-          ${COLORS.map(c => `<span class="clr-dot${line.color===c?' active':''}"
+        <div class="color-palette">
+          ${COLORS.map(c => `<span class="clr-swatch${line.color===c?' active':''}"
             data-c="${c}" style="background:${c}" title="${c}"></span>`).join('')}
-          <input type="color" id="prop-color" class="color-input" value="${line.color}">
         </div>
       </div>
       <hr class="prop-divider">
@@ -359,20 +366,13 @@ const UI = {
       snap(); line.name = e.target.value; this.renderLinesList();
     });
 
-    el.querySelectorAll('.clr-dot').forEach(d => {
+    el.querySelectorAll('.clr-swatch').forEach(d => {
       d.addEventListener('click', () => {
         snap(); line.color = d.dataset.c;
-        document.getElementById('prop-color').value = line.color;
-        el.querySelectorAll('.clr-dot').forEach(x => x.classList.remove('active'));
+        el.querySelectorAll('.clr-swatch').forEach(x => x.classList.remove('active'));
         d.classList.add('active');
         Renderer.render(); this.renderLinesList();
       });
-    });
-
-    document.getElementById('prop-color').addEventListener('input', e => {
-      snap(); line.color = e.target.value;
-      el.querySelectorAll('.clr-dot').forEach(x => x.classList.remove('active'));
-      Renderer.render(); this.renderLinesList();
     });
 
     document.getElementById('prop-width').addEventListener('input', e => {

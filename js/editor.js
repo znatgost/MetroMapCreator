@@ -7,8 +7,12 @@ const Editor = {
     dblTimer: 0,
   },
   MOVE_THR: 6,
-  _ctxStation: null,    // station id for context menu
-  _propsDirty: false,   // true after first property change in this selection
+  _ctxStation: null,
+  _propsDirty: false,
+
+  // Pinch-zoom tracking
+  _pointers: new Map(),   // pointerId → {sx, sy}
+  _pinchDist: null,
 
   init() {
     const svg = document.getElementById('map-svg');
@@ -19,6 +23,9 @@ const Editor = {
     svg.addEventListener('wheel',         this._onWheel.bind(this), { passive: false });
     svg.addEventListener('dblclick',      this._onDblClick.bind(this));
     svg.addEventListener('contextmenu',   this._onContextMenu.bind(this), { passive: false });
+
+    // Prevent default browser pan/zoom on canvas so we handle it ourselves
+    svg.style.touchAction = 'none';
 
     document.addEventListener('keydown',  this._onKey.bind(this));
     document.addEventListener('keyup',    this._onKeyUp.bind(this));
@@ -41,6 +48,16 @@ const Editor = {
     document.getElementById('map-svg').setPointerCapture(e.pointerId);
 
     const { sx, sy } = this._screen(e);
+    this._pointers.set(e.pointerId, { sx, sy });
+
+    // Pinch: second finger down → switch to pinch mode
+    if (this._pointers.size === 2) {
+      const pts = [...this._pointers.values()];
+      this._pinchDist = Math.hypot(pts[1].sx - pts[0].sx, pts[1].sy - pts[0].sy);
+      this.ptr.down = false; // cancel single-pointer drag
+      return;
+    }
+
     const { x: wx, y: wy } = this._world(sx, sy);
 
     this.ptr.down  = true;
@@ -66,6 +83,45 @@ const Editor = {
   // ── Pointer Move ──────────────────────────────────────────────────────────
   _onMove(e) {
     const { sx, sy } = this._screen(e);
+
+    // Update pointer tracking
+    if (this._pointers.has(e.pointerId)) {
+      this._pointers.set(e.pointerId, { sx, sy });
+    }
+
+    // ── Pinch-zoom (2 fingers) ──
+    if (this._pointers.size === 2 && this._pinchDist !== null) {
+      const pts = [...this._pointers.values()];
+      const newDist = Math.hypot(pts[1].sx - pts[0].sx, pts[1].sy - pts[0].sy);
+      const factor  = newDist / this._pinchDist;
+      const midX    = (pts[0].sx + pts[1].sx) / 2;
+      const midY    = (pts[0].sy + pts[1].sy) / 2;
+      const newZoom = Math.min(6, Math.max(0.12, state.zoom * factor));
+      state.pan.x   = midX - (midX - state.pan.x) * (newZoom / state.zoom);
+      state.pan.y   = midY - (midY - state.pan.y) * (newZoom / state.zoom);
+      state.zoom    = newZoom;
+      this._pinchDist = newDist;
+      Renderer.updateTransform();
+      return;
+    }
+
+    // ── Single-finger pan (on empty canvas, select tool or space) ──
+    if (this._pointers.size === 1 && this.ptr.down &&
+        this.ptr.target?.type === 'canvas' && state.tool === 'select') {
+      if (!this.ptr.panStart) {
+        this.ptr.panStart = { px: state.pan.x, py: state.pan.y, sx: this.ptr.sx, sy: this.ptr.sy };
+      }
+      const ps = this.ptr.panStart;
+      const dx = sx - ps.sx, dy = sy - ps.sy;
+      if (Math.hypot(dx, dy) > this.MOVE_THR) {
+        this.ptr.moved = true;
+        state.pan.x = ps.px + dx;
+        state.pan.y = ps.py + dy;
+        Renderer.updateTransform();
+        return;
+      }
+    }
+
     const { x: wx, y: wy } = this._world(sx, sy);
     state.cursor = { wx, wy };
 
@@ -107,19 +163,35 @@ const Editor = {
 
   // ── Pointer Up ────────────────────────────────────────────────────────────
   _onUp(e) {
+    this._pointers.delete(e.pointerId);
+    if (this._pointers.size < 2) this._pinchDist = null;
+
     if (!this.ptr.down) return;
     this.ptr.down = false;
     this._dragSnapshotted = false;
+    this.ptr.panStart = null;
 
     if (this.ptr.target?.type === 'pan') {
       document.getElementById('map-svg').style.cursor = state.spacePan ? 'grab' : '';
       return;
     }
 
-    if (!this.ptr.moved) this._handleClick();
+    if (!this.ptr.moved) {
+      this._handleClick();
+      // On mobile, open properties sheet on any tap that selected something
+      if (window.innerWidth <= 900 && state.selected) {
+        UI._openSheet();
+      }
+    }
   },
 
-  _onCancel() { this.ptr.down = false; this._dragSnapshotted = false; },
+  _onCancel(e) {
+    this._pointers.delete(e.pointerId);
+    if (this._pointers.size < 2) this._pinchDist = null;
+    this.ptr.down = false;
+    this._dragSnapshotted = false;
+    this.ptr.panStart = null;
+  },
 
   // ── Double-click: finish line drawing ─────────────────────────────────────
   _onDblClick(e) {
