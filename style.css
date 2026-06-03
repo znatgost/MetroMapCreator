@@ -368,8 +368,8 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
   display: none; height: var(--mobile-bar-h);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--sidebar-bg); border-top: 1px solid var(--sidebar-border);
-  padding: 6px 8px; align-items: center; justify-content: space-around;
-  flex-shrink: 0;
+  padding: 6px 4px; align-items: center; justify-content: space-around;
+  flex-shrink: 0; gap: 2px;
 }
 .mobile-fab {
   width: 48px; height: 48px; border-radius: 50%;
@@ -427,7 +427,7 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
 }
 @media (max-width: 480px) {
   .brand-name { display: none; }
-  .header-actions .btn-ghost { display: none; }
+  .header-actions .btn-ghost:not(#btn-settings) { display: none; }
   .zoom-bar { bottom: 72px; }
   .status-bar { display: none; }
 }
