@@ -79,6 +79,23 @@ metro-creator/
 
 ---
 
+## Mobile
+
+Metro Creator is fully usable on phones and tablets.
+
+| Gesture | Action |
+|---------|--------|
+| Tap station or line | Open properties |
+| Drag on empty canvas | Pan |
+| Two-finger pinch | Zoom in / out |
+| Drag station | Move it |
+
+The bottom bar gives access to all tools. The **+** button creates a new line, the **SVG** button exports the map. Tap **⚙** in the header to open settings.
+
+Properties open as a bottom sheet — swipe down or tap the backdrop to close.
+
+---
+
 ## Settings
 
 Click ⚙ in the header to toggle:
