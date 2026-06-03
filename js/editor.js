@@ -178,10 +178,6 @@ const Editor = {
 
     if (!this.ptr.moved) {
       this._handleClick();
-      // On mobile, open properties sheet on any tap that selected something
-      if (window.innerWidth <= 900 && state.selected) {
-        UI._openSheet();
-      }
     }
   },
 

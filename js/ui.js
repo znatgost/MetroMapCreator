@@ -9,6 +9,10 @@ const UI = {
       document.getElementById(id)?.addEventListener('click', () => this.createNewLine())
     );
 
+    document.getElementById('mobile-export-svg')?.addEventListener('click', () => {
+      document.getElementById('btn-export-svg')?.click();
+    });
+
     document.getElementById('btn-export-png')?.addEventListener('click', () => this.exportPNG());
     document.getElementById('btn-export-svg')?.addEventListener('click', () => this.exportSVG());
 
@@ -90,7 +94,7 @@ const UI = {
     const el = document.getElementById('map-legend');
     if (!el) return;
     if (!this.mapCfg.legend || state.lines.size === 0) { el.innerHTML = ''; return; }
-    const rows = [...state.lines.values()].map(l => {
+    const rows = [...state.lines.values()].filter(l => l.sids.length > 0).map(l => {
       const count = this.mapCfg.legendCounts ? `<span class="legend-count">${l.sids.length} stops</span>` : '';
       const name  = this.mapCfg.legendLines  ? `<span class="legend-name">${this._esc(l.name)}</span>` : '';
       return `<div class="legend-row"><span class="legend-dot" style="background:${l.color}"></span>${name}${count}</div>`;
@@ -205,15 +209,16 @@ const UI = {
     const desktop = document.getElementById('props-content');
     this._renderPropsInto(desktop);
 
-    // Mobile: update sheet if open
-    const sheet = document.getElementById('mobile-sheet');
-    if (sheet && !sheet.hasAttribute('hidden')) {
-      this._renderPropsInto(document.getElementById('mobile-props-content'));
-    }
-
     // On mobile, auto-open sheet when something is selected
     if (window.innerWidth <= 900 && state.selected) {
       this._openSheet();
+      return;
+    }
+
+    // Desktop: update sheet if already open
+    const sheet = document.getElementById('mobile-sheet');
+    if (sheet && !sheet.hasAttribute('hidden')) {
+      this._renderPropsInto(document.getElementById('mobile-props-content'));
     }
   },
 
@@ -474,12 +479,30 @@ const UI = {
   exportPNG() {
     const svg  = document.getElementById('map-svg');
     const rect = svg.getBoundingClientRect();
-    const DPR  = 2;
+
+    // Compute tight bounding box around content (world coords → screen)
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const s of state.stations.values()) {
+      const { x, y } = state.toSVG(s.gx, s.gy);
+      const sx = x * state.zoom + state.pan.x;
+      const sy = y * state.zoom + state.pan.y;
+      x0 = Math.min(x0, sx); y0 = Math.min(y0, sy);
+      x1 = Math.max(x1, sx); y1 = Math.max(y1, sy);
+    }
+    const PAD = 80;
+    const hasBounds = x0 < Infinity;
+    const cropX = hasBounds ? Math.max(0, x0 - PAD) : 0;
+    const cropY = hasBounds ? Math.max(0, y0 - PAD) : 0;
+    const cropW = hasBounds ? Math.min(rect.width,  x1 - x0 + PAD * 2) : rect.width;
+    const cropH = hasBounds ? Math.min(rect.height, y1 - y0 + PAD * 2) : rect.height;
+
+    // Target at least 2560px on the long side
+    const LONG = 2560;
+    const DPR  = Math.max(3, Math.ceil(LONG / Math.max(cropW, cropH)));
 
     const clone = svg.cloneNode(true);
-    clone.setAttribute('width', rect.width);
+    clone.setAttribute('width',  rect.width);
     clone.setAttribute('height', rect.height);
-    // Remove grid rect from export
     clone.querySelector('#world > rect')?.setAttribute('fill', 'none');
 
     const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
@@ -491,18 +514,19 @@ const UI = {
     const img  = new Image();
     img.onload = () => {
       const canvas  = document.createElement('canvas');
-      canvas.width  = rect.width * DPR;
-      canvas.height = rect.height * DPR;
+      canvas.width  = Math.round(cropW * DPR);
+      canvas.height = Math.round(cropH * DPR);
       const ctx = canvas.getContext('2d');
       ctx.scale(DPR, DPR);
-      ctx.fillStyle = '#EFF2F7';
-      ctx.fillRect(0, 0, rect.width, rect.height);
-      ctx.drawImage(img, 0, 0);
+      ctx.fillStyle = this.mapCfg.bgColor || '#EFF2F7';
+      ctx.fillRect(0, 0, cropW, cropH);
+      ctx.drawImage(img, -cropX, -cropY);
       URL.revokeObjectURL(url);
       const a = document.createElement('a');
       a.download = 'metro-map.png';
-      a.href = canvas.toDataURL();
+      a.href = canvas.toDataURL('image/png', 1.0);
       a.click();
+      this.toast(`Exported ${canvas.width}×${canvas.height}px`);
     };
     img.onerror = () => { URL.revokeObjectURL(url); this.toast('PNG export failed — try SVG'); };
     img.src = url;

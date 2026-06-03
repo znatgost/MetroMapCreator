@@ -79,7 +79,7 @@ const Renderer = {
     this.layerStations.innerHTML = '';
     for (const s of state.stations.values()) {
       const { x, y }  = state.toSVG(s.gx, s.gy);
-      const lines      = state.stationLines(s.id);
+      const lines      = state.stationLines(s.id).filter(l => l.sids.length >= 2);
       const isTransfer = lines.length > 1;
       const isSel      = state.selected?.type === 'station' && state.selected?.id === s.id;
       const aLine      = state.lines.get(state.activeLine);
