@@ -427,7 +427,7 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
 }
 @media (max-width: 480px) {
   .brand-name { display: none; }
-  .header-actions .btn-ghost:not(#btn-settings):not(#btn-export-svg) { display: none; }
+  .header-actions .btn-ghost:not(#btn-settings):not(#btn-export-svg):not(.social-link) { display: none; }
   .zoom-bar { bottom: 72px; }
   .status-bar { display: none; }
 }
@@ -604,3 +604,41 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
   background: var(--accent);
 }
 .mob-create-line:active { background: var(--accent-hover); }
+
+/* ── FAB popup menu ──────────────────────────────────────────── */
+.mob-fab-popup {
+  position: fixed;
+  bottom: calc(var(--mobile-bar-h) + env(safe-area-inset-bottom, 0px) + 10px);
+  left: 50%; transform: translateX(-50%);
+  background: var(--sidebar-bg);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 14px;
+  padding: 6px;
+  display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  z-index: 200;
+  min-width: 180px;
+  animation: popupIn 0.15s ease;
+}
+.mob-fab-popup[hidden] { display: none; }
+@keyframes popupIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);    }
+}
+.mob-popup-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border: none; background: transparent;
+  color: var(--text); font-size: 13px; font-weight: 600;
+  cursor: pointer; border-radius: 10px; text-align: left;
+  transition: background 0.12s;
+}
+.mob-popup-btn:active { background: rgba(61,114,246,0.12); color: var(--accent); }
+.mob-popup-btn svg { flex-shrink: 0; color: var(--accent); }
+
+/* ── Social links ────────────────────────────────────────────── */
+.social-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.social-link:hover { color: var(--text); }
