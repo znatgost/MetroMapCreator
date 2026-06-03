@@ -5,10 +5,31 @@ const UI = {
       btn.addEventListener('click', () => this.setTool(btn.dataset.tool))
     );
 
-    ['btn-new-line','mobile-new-line','empty-cta'].forEach(id =>
+    ['btn-new-line','empty-cta'].forEach(id =>
       document.getElementById(id)?.addEventListener('click', () => this.createNewLine())
     );
 
+    // Mobile FAB → show create mode
+    document.getElementById('mobile-fab')?.addEventListener('click', () => {
+      document.getElementById('mobile-bar-normal').setAttribute('hidden', '');
+      document.getElementById('mobile-bar-create').removeAttribute('hidden');
+    });
+    document.getElementById('mob-create-cancel')?.addEventListener('click', () => {
+      document.getElementById('mobile-bar-create').setAttribute('hidden', '');
+      document.getElementById('mobile-bar-normal').removeAttribute('hidden');
+    });
+    document.getElementById('mob-create-station')?.addEventListener('click', () => {
+      document.getElementById('mobile-bar-create').setAttribute('hidden', '');
+      document.getElementById('mobile-bar-normal').removeAttribute('hidden');
+      this.setTool('station');
+    });
+    document.getElementById('mob-create-line')?.addEventListener('click', () => {
+      document.getElementById('mobile-bar-create').setAttribute('hidden', '');
+      document.getElementById('mobile-bar-normal').removeAttribute('hidden');
+      this.createNewLine();
+    });
+
+    // Mobile SVG export
     document.getElementById('mobile-export-svg')?.addEventListener('click', () => {
       document.getElementById('btn-export-svg')?.click();
     });
@@ -110,7 +131,6 @@ const UI = {
     );
     const cursors = { select:'default', station:'crosshair', line:'crosshair', delete:'crosshair' };
     document.getElementById('map-svg').style.cursor = cursors[tool] ?? 'default';
-
     if (tool !== 'line' && !keepDrawing) {
       state.drawing = { active: false, lineId: null, lastSid: null };
       Renderer.renderUI();
@@ -172,6 +192,7 @@ const UI = {
     const list = document.getElementById('lines-list');
     if (state.lines.size === 0) {
       list.innerHTML = '<p class="hint-text">Click + to add a line</p>';
+      this.renderLegend();
       return;
     }
     list.innerHTML = '';
@@ -204,13 +225,18 @@ const UI = {
     this.renderLegend();
   },
 
+  _isMobile() {
+    // Check if mobile-bar is actually visible (CSS-driven, not width-based)
+    const bar = document.querySelector('.mobile-bar');
+    return bar && getComputedStyle(bar).display !== 'none';
+  },
+
   // ── Properties panel ─────────────────────────────────────────────────────
   renderProps() {
     const desktop = document.getElementById('props-content');
     this._renderPropsInto(desktop);
 
-    // On mobile, auto-open sheet when something is selected
-    if (window.innerWidth <= 900 && state.selected) {
+    if (this._isMobile() && state.selected) {
       this._openSheet();
       return;
     }
