@@ -9,29 +9,28 @@ const UI = {
       document.getElementById(id)?.addEventListener('click', () => this.createNewLine())
     );
 
-    // Mobile FAB → show create mode
-    document.getElementById('mobile-fab')?.addEventListener('click', () => {
-      document.getElementById('mobile-bar-normal').setAttribute('hidden', '');
-      document.getElementById('mobile-bar-create').removeAttribute('hidden');
+    // FAB popup
+    const popup = document.getElementById('mob-fab-popup');
+    document.getElementById('mobile-fab')?.addEventListener('click', e => {
+      e.stopPropagation();
+      popup?.toggleAttribute('hidden');
     });
-    document.getElementById('mob-create-cancel')?.addEventListener('click', () => {
-      document.getElementById('mobile-bar-create').setAttribute('hidden', '');
-      document.getElementById('mobile-bar-normal').removeAttribute('hidden');
-    });
-    document.getElementById('mob-create-station')?.addEventListener('click', () => {
-      document.getElementById('mobile-bar-create').setAttribute('hidden', '');
-      document.getElementById('mobile-bar-normal').removeAttribute('hidden');
+    document.getElementById('mob-popup-station')?.addEventListener('click', () => {
+      popup?.setAttribute('hidden', '');
       this.setTool('station');
     });
-    document.getElementById('mob-create-line')?.addEventListener('click', () => {
-      document.getElementById('mobile-bar-create').setAttribute('hidden', '');
-      document.getElementById('mobile-bar-normal').removeAttribute('hidden');
+    document.getElementById('mob-popup-line')?.addEventListener('click', () => {
+      popup?.setAttribute('hidden', '');
       this.createNewLine();
     });
+    document.addEventListener('click', () => popup?.setAttribute('hidden', ''));
 
-    // Mobile SVG export
-    document.getElementById('mobile-export-svg')?.addEventListener('click', () => {
-      document.getElementById('btn-export-svg')?.click();
+    // Mobile undo/redo
+    document.getElementById('mob-undo-btn')?.addEventListener('click', () => {
+      if (state.undo()) { Renderer.render(); this.renderLinesList(); this.renderProps(); this.updateUndoRedo(); this.updateDrawingChip(); }
+    });
+    document.getElementById('mob-redo-btn')?.addEventListener('click', () => {
+      if (state.redo()) { Renderer.render(); this.renderLinesList(); this.renderProps(); this.updateUndoRedo(); this.updateDrawingChip(); }
     });
 
     document.getElementById('btn-export-png')?.addEventListener('click', () => this.exportPNG());
@@ -226,9 +225,12 @@ const UI = {
   },
 
   _isMobile() {
-    // Check if mobile-bar is actually visible (CSS-driven, not width-based)
     const bar = document.querySelector('.mobile-bar');
-    return bar && getComputedStyle(bar).display !== 'none';
+    if (!bar) return false;
+    // Check CSS visibility OR touch device with small screen
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isNarrow = window.innerWidth <= 900;
+    return getComputedStyle(bar).display !== 'none' || (isTouchDevice && isNarrow);
   },
 
   // ── Properties panel ─────────────────────────────────────────────────────

@@ -64,6 +64,7 @@ const Editor = {
     this.ptr.btn   = e.button;
     this.ptr.sx    = sx; this.ptr.sy = sy;
     this.ptr.moved = false;
+    this.ptr.isTouch = e.pointerType === 'touch';
 
     if (e.button === 1 || state.spacePan) {
       this.ptr.target   = { type: 'pan' };
@@ -72,7 +73,9 @@ const Editor = {
       return;
     }
 
-    const nearS   = state.nearStation(wx, wy);
+    const isTouchEvent = e.pointerType === 'touch';
+    const snapThreshold = isTouchEvent ? CFG.SNAP_D * 3 / state.zoom : CFG.SNAP_D;
+    const nearS   = state.nearStation(wx, wy, snapThreshold);
     const lineEl  = e.target.closest?.('[data-line-id]');
 
     if (nearS)       this.ptr.target = { type: 'station', id: nearS.id };
@@ -132,7 +135,8 @@ const Editor = {
     }
 
     if (!this.ptr.moved) {
-      if (Math.hypot(sx - this.ptr.sx, sy - this.ptr.sy) > this.MOVE_THR) this.ptr.moved = true;
+      const thr = this.ptr.isTouch ? this.MOVE_THR * 2.5 : this.MOVE_THR;
+      if (Math.hypot(sx - this.ptr.sx, sy - this.ptr.sy) > thr) this.ptr.moved = true;
     }
 
     if (this.ptr.target?.type === 'pan') {

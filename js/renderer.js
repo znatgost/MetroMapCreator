@@ -89,7 +89,14 @@ const Renderer = {
       const g = this.el('g', {
         transform: `translate(${x},${y})`,
         cursor: 'pointer', 'data-station-id': s.id,
+        'pointer-events': 'all',
       });
+
+      // Invisible large touch hit area
+      g.appendChild(this.el('circle', {
+        r: Math.max(r + 14, 22), fill: 'transparent',
+        'pointer-events': 'all', 'data-station-id': s.id,
+      }));
 
       // Active-line halo
       if (isOnActive) {
