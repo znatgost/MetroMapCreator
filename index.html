@@ -166,26 +166,42 @@
   </div><!-- /workspace -->
 
   <!-- MOBILE BAR -->
-  <nav class="mobile-bar">
-    <button class="tool-btn active" data-tool="select">
-      <svg width="22" height="22" viewBox="0 0 18 18" fill="none"><path d="M3 2l12 7-5.5 1.5L7 17 3 2z" fill="currentColor"/></svg>
-      <span>Select</span>
-    </button>
-    <button class="tool-btn" data-tool="station">
-      <svg width="22" height="22" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="9" cy="9" r="2" fill="currentColor"/></svg>
-      <span>Station</span>
-    </button>
-    <button class="mobile-fab" id="mobile-new-line" title="New Line">
-      <svg width="20" height="20" viewBox="0 0 11 11"><path d="M5.5 1v9M1 5.5h9" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
-    </button>
-    <button class="tool-btn" data-tool="line">
-      <svg width="22" height="22" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="6.5" y1="9" x2="11.5" y2="9" stroke="currentColor" stroke-width="2.5"/><circle cx="14" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
-      <span>Line</span>
-    </button>
-    <button class="tool-btn" id="mobile-export-svg" data-tool="">
-      <svg width="22" height="22" viewBox="0 0 18 18" fill="none"><path d="M9 2v9M5 8l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>SVG</span>
-    </button>
+  <nav class="mobile-bar" id="mobile-bar">
+    <div class="mobile-bar-normal" id="mobile-bar-normal">
+      <button class="mob-tool-btn active" data-tool="select">
+        <svg width="20" height="20" viewBox="0 0 18 18" fill="none"><path d="M3 2l12 7-5.5 1.5L7 17 3 2z" fill="currentColor"/></svg>
+        <span>Select</span>
+      </button>
+      <button class="mob-tool-btn" data-tool="station">
+        <svg width="20" height="20" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="9" cy="9" r="2" fill="currentColor"/></svg>
+        <span>Station</span>
+      </button>
+      <button class="mobile-fab" id="mobile-fab">
+        <svg width="20" height="20" viewBox="0 0 11 11"><path d="M5.5 1v9M1 5.5h9" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="mob-tool-btn" data-tool="line">
+        <svg width="20" height="20" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="6.5" y1="9" x2="11.5" y2="9" stroke="currentColor" stroke-width="2.5"/><circle cx="14" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+        <span>Line</span>
+      </button>
+      <button class="mob-tool-btn" data-tool="delete">
+        <svg width="20" height="20" viewBox="0 0 18 18" fill="none"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span>Delete</span>
+      </button>
+    </div>
+    <div class="mobile-bar-create" id="mobile-bar-create" hidden>
+      <button class="mob-create-btn mob-create-cancel" id="mob-create-cancel">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Cancel</span>
+      </button>
+      <button class="mob-create-btn mob-create-station" id="mob-create-station">
+        <svg width="22" height="22" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="9" cy="9" r="2" fill="currentColor"/></svg>
+        <span>Station</span>
+      </button>
+      <button class="mob-create-btn mob-create-line" id="mob-create-line">
+        <svg width="22" height="22" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="6.5" y1="9" x2="11.5" y2="9" stroke="currentColor" stroke-width="2.5"/><circle cx="14" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+        <span>New Line</span>
+      </button>
+    </div>
   </nav>
 
   <!-- MOBILE PROPERTIES SHEET -->

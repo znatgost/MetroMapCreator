@@ -427,7 +427,7 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
 }
 @media (max-width: 480px) {
   .brand-name { display: none; }
-  .header-actions .btn-ghost:not(#btn-settings) { display: none; }
+  .header-actions .btn-ghost:not(#btn-settings):not(#btn-export-svg) { display: none; }
   .zoom-bar { bottom: 72px; }
   .status-bar { display: none; }
 }
@@ -562,3 +562,45 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
   transform: scale(1.08);
   box-shadow: 0 0 0 2px white, 0 0 0 3.5px #3D72F6;
 }
+
+/* ── New mobile bar layout ───────────────────────────────────── */
+.mobile-bar-normal,
+.mobile-bar-create {
+  display: flex; align-items: center; justify-content: space-around;
+  width: 100%; height: 100%;
+}
+.mobile-bar-create[hidden] { display: none; }
+
+.mob-tool-btn {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px;
+  padding: 4px 10px; border: none; background: transparent;
+  color: var(--text-muted); font-size: 10px; font-weight: 500;
+  cursor: pointer; border-radius: 8px; min-width: 48px;
+  transition: color 0.15s, background 0.15s;
+}
+.mob-tool-btn.active { color: var(--accent); }
+.mob-tool-btn:active { background: rgba(61,114,246,0.1); }
+
+.mob-create-btn {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; flex: 1;
+  padding: 6px 8px; border: none; background: transparent;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  border-radius: 10px; transition: background 0.15s, color 0.15s;
+}
+.mob-create-cancel {
+  color: var(--text-muted);
+}
+.mob-create-cancel:active { background: rgba(0,0,0,0.06); }
+.mob-create-station {
+  color: var(--accent);
+  background: rgba(61,114,246,0.08);
+  border: 1.5px solid rgba(61,114,246,0.2);
+}
+.mob-create-station:active { background: rgba(61,114,246,0.18); }
+.mob-create-line {
+  color: white;
+  background: var(--accent);
+}
+.mob-create-line:active { background: var(--accent-hover); }
