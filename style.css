@@ -645,3 +645,32 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
   transition: color 0.15s;
 }
 .social-link:hover { color: var(--text); }
+
+/* ── Tap popup (mobile station/line settings) ───────────────── */
+.tap-popup {
+  position: fixed;
+  z-index: 500;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 12px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  min-width: 150px;
+  animation: popupIn 0.12s ease;
+  pointer-events: all;
+}
+.tap-popup[hidden] { display: none; }
+.tap-popup-btn {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 13px; border: none; background: transparent;
+  color: var(--text); font-size: 13px; font-weight: 500;
+  cursor: pointer; border-radius: 8px; text-align: left;
+  transition: background 0.1s;
+  width: 100%;
+}
+.tap-popup-btn:active { background: rgba(61,114,246,0.1); }
+.tap-popup-delete { color: #E63946; }
+.tap-popup-delete:active { background: rgba(230,57,70,0.1); }
