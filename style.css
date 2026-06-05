@@ -384,6 +384,9 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
 .mobile-sheet {
   position: fixed; inset: 0; z-index: 3000;
 }
+@media (min-width: 901px) {
+  .mobile-sheet { display: none !important; }
+}
 .sheet-backdrop {
   position: absolute; inset: 0;
   background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
