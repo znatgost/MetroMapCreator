@@ -23,7 +23,27 @@ const UI = {
       popup?.setAttribute('hidden', '');
       this.createNewLine();
     });
-    document.addEventListener('click', () => popup?.setAttribute('hidden', ''));
+    document.addEventListener('click', () => {
+      popup?.setAttribute('hidden', '');
+      document.getElementById('tap-popup')?.setAttribute('hidden', '');
+    });
+
+    // Tap popup: Settings / Delete
+    document.getElementById('tap-popup-settings')?.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('tap-popup').setAttribute('hidden', '');
+      this._openSheet();
+    });
+    document.getElementById('tap-popup-delete')?.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('tap-popup').setAttribute('hidden', '');
+      if (!state.selected) return;
+      state.snapshot(); this.updateUndoRedo();
+      const sel = state.selected; state.selected = null;
+      if (sel.type === 'station') state.removeStation(sel.id);
+      else state.removeLine(sel.id);
+      Renderer.render(); this.renderLinesList(); this.renderProps(); this.updateDrawingChip();
+    });
 
     // Mobile undo/redo
     document.getElementById('mob-undo-btn')?.addEventListener('click', () => {
@@ -234,11 +254,9 @@ const UI = {
   renderProps() {
     const desktop = document.getElementById('props-content');
     this._renderPropsInto(desktop);
-
-    if (state.selected) {
-      this._openSheet();
-    } else {
-      this._closeSheet();
+    const sheet = document.getElementById('mobile-sheet');
+    if (sheet && !sheet.hasAttribute('hidden')) {
+      this._renderPropsInto(document.getElementById('mobile-props-content'));
     }
   },
 
@@ -273,11 +291,8 @@ const UI = {
     el.innerHTML = `
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <div class="prop-input-row">
-          <input id="prop-name" class="prop-input" type="text"
-            value="${this._esc(s.name)}" placeholder="Station name…">
-          <button id="prop-name-ok" class="prop-ok-btn" title="Apply (Enter)">✓</button>
-        </div>
+        <input id="prop-name" class="prop-input" type="text"
+          value="${this._esc(s.name)}" placeholder="Station name…">
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
@@ -301,15 +316,6 @@ const UI = {
       Editor._markPropsDirty();
       s.name = e.target.value;
       Renderer.renderLabels();
-    });
-    nameInput?.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); nameInput.blur(); this.toast('Name saved'); }
-    });
-    document.getElementById('prop-name-ok')?.addEventListener('click', () => {
-      Editor._markPropsDirty();
-      s.name = nameInput.value;
-      Renderer.renderLabels();
-      this.toast('Name saved');
     });
 
     el.querySelectorAll('.lp-btn').forEach(btn => {
@@ -569,4 +575,15 @@ const UI = {
   _esc(str) {
     return (str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   },
+};
+
+// patch: showTapPopup — called from editor on touch tap
+UI.showTapPopup = function(screenX, screenY) {
+  const popup = document.getElementById('tap-popup');
+  if (!popup) return;
+  popup.removeAttribute('hidden');
+  const pw = 160, ph = 90;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  popup.style.left = Math.min(screenX, vw - pw - 8) + 'px';
+  popup.style.top  = Math.max(8, Math.min(screenY - ph - 10, vh - ph - 8)) + 'px';
 };

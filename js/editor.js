@@ -220,6 +220,9 @@ const Editor = {
         state.selected = { type: 'station', id: sid };
         UI.renderProps();
         Renderer.render();
+        if (this.ptr.isTouch) {
+          UI.showTapPopup(this.ptr.sx, this.ptr.sy);
+        }
         break;
 
       case 'line':
@@ -246,6 +249,9 @@ const Editor = {
         state.selected = { type: 'line', id: lid };
         UI.renderProps();
         Renderer.render();
+        if (this.ptr.isTouch) {
+          UI.showTapPopup(this.ptr.sx, this.ptr.sy);
+        }
         break;
 
       case 'delete':
