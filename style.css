@@ -674,3 +674,52 @@ body { font-family: var(--font-ui); background: var(--canvas-bg); color: var(--t
 .tap-popup-btn:active { background: rgba(61,114,246,0.1); }
 .tap-popup-delete { color: #E63946; }
 .tap-popup-delete:active { background: rgba(230,57,70,0.1); }
+
+/* ── Aspect ratio picker ─────────────────────────────────────── */
+.aspect-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+}
+.aspect-btn {
+  padding: 8px 4px; border: 1.5px solid var(--props-border);
+  border-radius: 8px; background: transparent; font-size: 12px;
+  font-weight: 600; color: var(--text-muted); cursor: pointer;
+  transition: all 0.12s; text-align: center;
+}
+.aspect-btn:hover { border-color: var(--accent); color: var(--accent); }
+.aspect-btn.active {
+  background: var(--accent); border-color: var(--accent); color: white;
+}
+
+/* ── Layer order buttons ─────────────────────────────────────── */
+.line-order-btns {
+  display: flex; gap: 2px; margin-left: auto;
+}
+.order-btn {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: 1px solid var(--sidebar-border);
+  background: transparent; color: var(--text-muted);
+  font-size: 11px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  padding: 0; line-height: 1;
+  transition: background 0.1s, color 0.1s;
+}
+.order-btn:hover:not([disabled]) { background: var(--accent); color: white; border-color: var(--accent); }
+.order-btn[disabled] { opacity: 0.25; cursor: default; }
+
+/* ── Corner radius slider ────────────────────────────────────── */
+.prop-slider {
+  width: 100%; height: 4px; border-radius: 2px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--props-border); outline: none; cursor: pointer;
+  margin-top: 6px;
+}
+.prop-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--accent); cursor: pointer;
+  border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.prop-slider::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent); cursor: pointer;
+  border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}

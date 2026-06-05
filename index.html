@@ -239,6 +239,34 @@
     <div class="ctx-item ctx-danger" id="ctx-delete">⌫ Delete station</div>
   </div>
 
+  <!-- EXPORT DIALOG -->
+  <div class="modal-overlay" id="export-overlay" hidden>
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">Export PNG</span>
+        <button class="modal-close" id="export-close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <div class="settings-group-title">Aspect Ratio</div>
+          <div class="aspect-grid">
+            <button class="aspect-btn active" data-ratio="">Auto (tight)</button>
+            <button class="aspect-btn" data-ratio="16:9">16:9</button>
+            <button class="aspect-btn" data-ratio="4:3">4:3</button>
+            <button class="aspect-btn" data-ratio="1:1">1:1</button>
+            <button class="aspect-btn" data-ratio="3:2">3:2</button>
+            <button class="aspect-btn" data-ratio="2:1">2:1</button>
+            <button class="aspect-btn" data-ratio="9:16">9:16</button>
+            <button class="aspect-btn" data-ratio="3:4">3:4</button>
+          </div>
+        </div>
+        <button id="export-confirm" class="btn btn-primary" style="width:100%;padding:10px;font-size:14px;margin-top:4px">
+          Export PNG
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS MODAL -->
   <div class="modal-overlay" id="settings-overlay" hidden>
     <div class="modal-box" id="settings-modal">
