@@ -11,17 +11,22 @@ const UI = {
 
     // FAB popup
     const popup = document.getElementById('mob-fab-popup');
+    popup?.addEventListener('click', e => e.stopPropagation());
     document.getElementById('mobile-fab')?.addEventListener('click', e => {
       e.stopPropagation();
       popup?.toggleAttribute('hidden');
     });
-    document.getElementById('mob-popup-station')?.addEventListener('click', () => {
+    document.getElementById('mob-popup-station')?.addEventListener('click', e => {
+      e.stopPropagation();
       popup?.setAttribute('hidden', '');
       this.setTool('station');
+      this.toast('Tap the map to place a station');
     });
-    document.getElementById('mob-popup-line')?.addEventListener('click', () => {
+    document.getElementById('mob-popup-line')?.addEventListener('click', e => {
+      e.stopPropagation();
       popup?.setAttribute('hidden', '');
       this.createNewLine();
+      this.openSelectedSheet();
     });
     document.addEventListener('click', () => {
       popup?.setAttribute('hidden', '');
@@ -53,7 +58,7 @@ const UI = {
       if (state.redo()) { Renderer.render(); this.renderLinesList(); this.renderProps(); this.updateUndoRedo(); this.updateDrawingChip(); }
     });
 
-    document.getElementById('btn-export-png')?.addEventListener('click', () => this.exportPNG());
+    document.getElementById('btn-export-png')?.addEventListener('click', () => this.openExportDialog());
     document.getElementById('btn-export-svg')?.addEventListener('click', () => this.exportSVG());
 
     document.getElementById('btn-undo')?.addEventListener('click', () => {
@@ -76,6 +81,7 @@ const UI = {
     document.getElementById('sheet-backdrop')?.addEventListener('click', () => this._closeSheet());
     document.getElementById('sheet-close')   ?.addEventListener('click', () => this._closeSheet());
 
+    this._initExportDialog();
     this._initSettings();
   },
 
@@ -85,6 +91,7 @@ const UI = {
     labels: true, grid: true,
     legend: true, legendLines: true, legendCounts: true,
     bgColor: '#EFF2F7',
+    exportRatio: '',
   },
 
   _initSettings() {
@@ -123,6 +130,35 @@ const UI = {
     });
   },
 
+  _initExportDialog() {
+    const overlay = document.getElementById('export-overlay');
+    if (!overlay) return;
+
+    document.getElementById('export-close')?.addEventListener('click', () => {
+      overlay.setAttribute('hidden', '');
+    });
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.setAttribute('hidden', '');
+    });
+
+    document.querySelectorAll('.aspect-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.mapCfg.exportRatio = btn.dataset.ratio ?? '';
+        document.querySelectorAll('.aspect-btn').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    document.getElementById('export-confirm')?.addEventListener('click', () => {
+      overlay.setAttribute('hidden', '');
+      this.exportPNG(this.mapCfg.exportRatio);
+    });
+  },
+
+  openExportDialog() {
+    document.getElementById('export-overlay')?.removeAttribute('hidden');
+  },
+
   _applyGrid() {
     const rect = document.querySelector('#world > rect');
     if (rect) rect.setAttribute('fill', this.mapCfg.grid ? 'url(#grid-pat)' : 'none');
@@ -147,6 +183,7 @@ const UI = {
   // ── Tool ─────────────────────────────────────────────────────────────────
   setTool(tool, { keepDrawing = false } = {}) {
     state.tool = tool;
+    if (tool === 'line' && !keepDrawing) this._selectLineForTool();
     document.querySelectorAll('[data-tool]').forEach(b =>
       b.classList.toggle('active', b.dataset.tool === tool)
     );
@@ -157,7 +194,28 @@ const UI = {
       Renderer.renderUI();
       this.updateDrawingChip();
     }
+    if (tool === 'line') {
+      this.renderLinesList();
+      this.renderProps();
+      Renderer.render();
+    }
     this.updateStatus();
+  },
+
+  _selectLineForTool() {
+    if (state.selected?.type === 'line' && state.lines.has(state.selected.id)) {
+      state.activeLine = state.selected.id;
+      return;
+    }
+    if (state.activeLine && state.lines.has(state.activeLine)) {
+      state.selected = { type: 'line', id: state.activeLine };
+      return;
+    }
+    const first = state.lines.keys().next().value;
+    if (first) {
+      state.activeLine = first;
+      state.selected = { type: 'line', id: first };
+    }
   },
 
   // ── New line ──────────────────────────────────────────────────────────────
@@ -291,7 +349,7 @@ const UI = {
     el.innerHTML = `
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <input id="prop-name" class="prop-input" type="text"
+        <input id="prop-name" class="prop-input prop-name" type="text"
           value="${this._esc(s.name)}" placeholder="Station name…">
       </div>
       <hr class="prop-divider">
@@ -311,7 +369,7 @@ const UI = {
       </div>
     `;
 
-    const nameInput = document.getElementById('prop-name');
+    const nameInput = el.querySelector('.prop-name');
     nameInput?.addEventListener('input', e => {
       Editor._markPropsDirty();
       s.name = e.target.value;
@@ -340,11 +398,12 @@ const UI = {
   _lineProps(el) {
     const line = state.lines.get(state.selected.id);
     if (!line) { el.innerHTML = ''; return; }
+    if (line.cornerR == null) line.cornerR = line.corner === 'sharp' ? 0 : CFG.CORNER_R;
 
     el.innerHTML = `
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <input id="prop-lname" class="prop-input" type="text" value="${this._esc(line.name)}">
+        <input id="prop-lname" class="prop-input prop-lname" type="text" value="${this._esc(line.name)}">
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
@@ -356,8 +415,8 @@ const UI = {
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
-        <label class="prop-label">Width &nbsp;<span id="wv" style="font-weight:400;text-transform:none">${line.width}px</span></label>
-        <input type="range" id="prop-width" class="range-input" min="3" max="20" step="1" value="${line.width}">
+        <label class="prop-label">Width &nbsp;<span class="width-value" style="font-weight:400;text-transform:none">${line.width}px</span></label>
+        <input type="range" id="prop-width" class="range-input prop-width" min="3" max="20" step="1" value="${line.width}">
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
@@ -376,24 +435,28 @@ const UI = {
           ).join('')}
         </div>
       </div>
+      <div class="prop-row">
+        <label class="prop-label">Corner radius &nbsp;<span class="corner-radius-value" style="font-weight:400;text-transform:none">${line.cornerR}px</span></label>
+        <input type="range" class="prop-slider prop-corner-radius" min="0" max="40" step="1" value="${line.cornerR}">
+      </div>
       <hr class="prop-divider">
       <div class="prop-row">
         <label class="prop-label">Loop</label>
         <label class="toggle-row">
-          <input type="checkbox" id="prop-loop" ${line.loop?'checked':''}>
+          <input type="checkbox" id="prop-loop" class="prop-loop" ${line.loop?'checked':''}>
           <span class="toggle-track"></span>
           <span class="toggle-text">Circular line</span>
         </label>
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
-        <button id="prop-continue" class="btn-continue">▶ Continue drawing this line</button>
+        <button id="prop-continue" class="btn-continue prop-continue">▶ Continue drawing this line</button>
       </div>
     `;
 
     const snap = () => { Editor._markPropsDirty(); };
 
-    document.getElementById('prop-lname').addEventListener('input', e => {
+    el.querySelector('.prop-lname')?.addEventListener('input', e => {
       snap(); line.name = e.target.value; this.renderLinesList();
     });
 
@@ -406,9 +469,9 @@ const UI = {
       });
     });
 
-    document.getElementById('prop-width').addEventListener('input', e => {
+    el.querySelector('.prop-width')?.addEventListener('input', e => {
       snap(); line.width = +e.target.value;
-      document.getElementById('wv').textContent = `${line.width}px`;
+      el.querySelector('.width-value').textContent = `${line.width}px`;
       Renderer.render();
     });
 
@@ -422,17 +485,32 @@ const UI = {
 
     el.querySelectorAll('[data-corner]').forEach(btn => {
       btn.addEventListener('click', () => {
-        snap(); line.corner = btn.dataset.corner;
+        snap();
+        line.corner = btn.dataset.corner;
+        line.cornerR = line.corner === 'sharp' ? 0 : (line.cornerR || CFG.CORNER_R);
+        el.querySelector('.prop-corner-radius').value = line.cornerR;
+        el.querySelector('.corner-radius-value').textContent = `${line.cornerR}px`;
         el.querySelectorAll('[data-corner]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active'); Renderer.render();
       });
     });
 
-    document.getElementById('prop-loop').addEventListener('change', e => {
+    el.querySelector('.prop-corner-radius')?.addEventListener('input', e => {
+      snap();
+      line.cornerR = +e.target.value;
+      line.corner = line.cornerR === 0 ? 'sharp' : 'rounded';
+      el.querySelector('.corner-radius-value').textContent = `${line.cornerR}px`;
+      el.querySelectorAll('[data-corner]').forEach(b =>
+        b.classList.toggle('active', b.dataset.corner === line.corner)
+      );
+      Renderer.render();
+    });
+
+    el.querySelector('.prop-loop')?.addEventListener('change', e => {
       snap(); line.loop = e.target.checked; Renderer.render();
     });
 
-    document.getElementById('prop-continue').addEventListener('click', () => {
+    el.querySelector('.prop-continue')?.addEventListener('click', () => {
       state.activeLine = line.id;
       const lastSid = line.sids[line.sids.length - 1];
       state.drawing = lastSid
@@ -447,6 +525,10 @@ const UI = {
   },
 
   // ── Mobile sheet ──────────────────────────────────────────────────────────
+  openSelectedSheet() {
+    if (this._isMobile() && state.selected) this._openSheet();
+  },
+
   _openSheet() {
     const sheet = document.getElementById('mobile-sheet');
     if (!sheet) return;
@@ -502,7 +584,9 @@ const UI = {
   },
 
   // ── Export PNG ────────────────────────────────────────────────────────────
-  exportPNG() {
+  exportPNG(ratio = '') {
+    return this._exportPNGFromBounds(ratio);
+
     const svg  = document.getElementById('map-svg');
     const rect = svg.getBoundingClientRect();
 
@@ -556,6 +640,99 @@ const UI = {
     };
     img.onerror = () => { URL.revokeObjectURL(url); this.toast('PNG export failed — try SVG'); };
     img.src = url;
+  },
+
+  _exportPNGFromBounds(ratio = '') {
+    const svg = document.getElementById('map-svg');
+    const bounds = this._exportBounds(ratio);
+
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('width', bounds.w);
+    clone.setAttribute('height', bounds.h);
+    clone.setAttribute('viewBox', `0 0 ${bounds.w} ${bounds.h}`);
+    clone.querySelector('#world')?.setAttribute('transform', `translate(${-bounds.x},${-bounds.y}) scale(1)`);
+    clone.querySelector('#world > rect')?.setAttribute('fill', 'none');
+    clone.querySelector('#layer-ui')?.replaceChildren();
+
+    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    style.textContent = "@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&display=swap');";
+    clone.insertBefore(style, clone.firstChild);
+
+    const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const LONG = 2560;
+      const scale = Math.max(1, LONG / Math.max(bounds.w, bounds.h));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bounds.w * scale);
+      canvas.height = Math.round(bounds.h * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      ctx.fillStyle = this.mapCfg.bgColor || '#EFF2F7';
+      ctx.fillRect(0, 0, bounds.w, bounds.h);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+
+      const a = document.createElement('a');
+      a.download = 'metro-map.png';
+      a.href = canvas.toDataURL('image/png', 1.0);
+      a.click();
+      this.toast(`Exported ${canvas.width}x${canvas.height}px`);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      this.toast('PNG export failed - try SVG');
+    };
+    img.src = url;
+  },
+
+  _exportBounds(ratio = '') {
+    const PAD = 80;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+
+    for (const s of state.stations.values()) {
+      const { x, y } = state.toSVG(s.gx, s.gy);
+      x0 = Math.min(x0, x);
+      y0 = Math.min(y0, y);
+      x1 = Math.max(x1, x);
+      y1 = Math.max(y1, y);
+    }
+
+    if (x0 === Infinity) {
+      const rect = document.getElementById('map-svg').getBoundingClientRect();
+      const topLeft = state.toWorld(0, 0);
+      return { x: topLeft.x, y: topLeft.y, w: rect.width / state.zoom, h: rect.height / state.zoom };
+    }
+
+    x0 -= PAD; y0 -= PAD; x1 += PAD; y1 += PAD;
+
+    const targetRatio = this._parseRatio(ratio);
+    if (targetRatio) {
+      const cx = (x0 + x1) / 2;
+      const cy = (y0 + y1) / 2;
+      let w = x1 - x0;
+      let h = y1 - y0;
+
+      if (w / h > targetRatio) h = w / targetRatio;
+      else w = h * targetRatio;
+
+      x0 = cx - w / 2; x1 = cx + w / 2;
+      y0 = cy - h / 2; y1 = cy + h / 2;
+    }
+
+    return {
+      x: Math.floor(x0),
+      y: Math.floor(y0),
+      w: Math.ceil(x1 - x0),
+      h: Math.ceil(y1 - y0),
+    };
+  },
+
+  _parseRatio(value) {
+    if (!value) return null;
+    const [w, h] = value.split(':').map(Number);
+    return w > 0 && h > 0 ? w / h : null;
   },
 
   exportSVG() {

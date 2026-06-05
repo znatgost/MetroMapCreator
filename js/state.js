@@ -130,7 +130,7 @@ const state = {
     this.lines.set(id, {
       id, name: `Line ${this.lines.size + 1}`, color: COLORS[idx],
       width: CFG.LINE_W, routing: 'diagonal', corner: 'rounded',
-      loop: false, sids: [],
+      cornerR: CFG.CORNER_R, loop: false, sids: [],
     });
     return id;
   },

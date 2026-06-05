@@ -57,12 +57,12 @@ const Router = {
   },
 
   // Preview from last station to cursor (world coords)
-  previewPath(sid, wx, wy, routing, corner) {
+  previewPath(sid, wx, wy, routing, corner, cornerR) {
     const s = state.stations.get(sid);
     if (!s) return null;
     const { gx, gy } = state.snapGrid(wx, wy);
     const fake = { gx, gy };
-    return this.segment(s, fake, routing, corner)
+    return this.segment(s, fake, routing, corner, cornerR)
         || `M${s.gx*CFG.GRID},${s.gy*CFG.GRID} L${wx},${wy}`;
   },
 };

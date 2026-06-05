@@ -174,7 +174,7 @@ const Renderer = {
 
     // Drawing preview path
     if (state.drawing.active && aLine && state.drawing.lastSid) {
-      const d = Router.previewPath(state.drawing.lastSid, wx, wy, aLine.routing, aLine.corner);
+      const d = Router.previewPath(state.drawing.lastSid, wx, wy, aLine.routing, aLine.corner, aLine.cornerR);
       if (d) {
         this.layerUI.appendChild(this.el('path', {
           d, stroke: aLine.color, 'stroke-width': aLine.width, fill: 'none',

@@ -105,6 +105,7 @@ function _loadState(d) {
     ...v,
     routing: v.routing ?? 'diagonal',
     corner:  v.corner  ?? 'rounded',
+    cornerR: v.cornerR ?? (v.corner === 'sharp' ? 0 : CFG.CORNER_R),
     sids:    v.sids    ?? [],
   }]));
   state.pan  = d.pan  ?? state.pan;

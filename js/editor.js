@@ -4,6 +4,7 @@ const Editor = {
     down: false, btn: 0,
     sx: 0, sy: 0, moved: false,
     target: null, panStart: null,
+    dragOffset: null,
     dblTimer: 0,
   },
   MOVE_THR: 6,
@@ -78,9 +79,17 @@ const Editor = {
     const nearS   = state.nearStation(wx, wy, snapThreshold);
     const lineEl  = e.target.closest?.('[data-line-id]');
 
-    if (nearS)       this.ptr.target = { type: 'station', id: nearS.id };
-    else if (lineEl) this.ptr.target = { type: 'line', id: lineEl.dataset.lineId };
-    else             this.ptr.target = { type: 'canvas' };
+    if (nearS) {
+      const p = state.toSVG(nearS.gx, nearS.gy);
+      this.ptr.target = { type: 'station', id: nearS.id };
+      this.ptr.dragOffset = { x: p.x - wx, y: p.y - wy };
+    } else if (lineEl) {
+      this.ptr.target = { type: 'line', id: lineEl.dataset.lineId };
+      this.ptr.dragOffset = null;
+    } else {
+      this.ptr.target = { type: 'canvas' };
+      this.ptr.dragOffset = null;
+    }
   },
 
   // ── Pointer Move ──────────────────────────────────────────────────────────
@@ -150,7 +159,8 @@ const Editor = {
     if (this.ptr.moved && this.ptr.target?.type === 'station' && state.tool === 'select') {
       const s = state.stations.get(this.ptr.target.id);
       if (s) {
-        const { gx, gy } = state.snapGrid(wx, wy);
+        const off = this.ptr.dragOffset ?? { x: 0, y: 0 };
+        const { gx, gy } = state.snapGrid(wx + off.x, wy + off.y);
         if (s.gx !== gx || s.gy !== gy) {
           if (!this._dragSnapshotted) { state.snapshot(); this._dragSnapshotted = true; UI.updateUndoRedo(); }
           s.gx = gx; s.gy = gy;
@@ -174,6 +184,7 @@ const Editor = {
     this.ptr.down = false;
     this._dragSnapshotted = false;
     this.ptr.panStart = null;
+    this.ptr.dragOffset = null;
 
     if (this.ptr.target?.type === 'pan') {
       document.getElementById('map-svg').style.cursor = state.spacePan ? 'grab' : '';
@@ -191,6 +202,7 @@ const Editor = {
     this.ptr.down = false;
     this._dragSnapshotted = false;
     this.ptr.panStart = null;
+    this.ptr.dragOffset = null;
   },
 
   // ── Double-click: finish line drawing ─────────────────────────────────────
@@ -221,7 +233,7 @@ const Editor = {
         UI.renderProps();
         Renderer.render();
         if (this.ptr.isTouch) {
-          UI.showTapPopup(this.ptr.sx, this.ptr.sy);
+          UI.openSelectedSheet();
         }
         break;
 
@@ -250,7 +262,7 @@ const Editor = {
         UI.renderProps();
         Renderer.render();
         if (this.ptr.isTouch) {
-          UI.showTapPopup(this.ptr.sx, this.ptr.sy);
+          UI.openSelectedSheet();
         }
         break;
 
