@@ -1,42 +1,40 @@
 // ─── Router: SVG path computation ─────────────────────────────────────────
 const Router = {
 
-  segment(s1, s2, routing, corner) {
-    const x1 = s1.gx * CFG.GRID, y1 = s1.gy * CFG.GRID;
-    const x2 = s2.gx * CFG.GRID, y2 = s2.gy * CFG.GRID;
+  segment(s1, s2, routing, corner, cornerR) {
+    // Always round to grid for path geometry — fractional coords break diagonal routing
+    const x1 = Math.round(s1.gx) * CFG.GRID, y1 = Math.round(s1.gy) * CFG.GRID;
+    const x2 = Math.round(s2.gx) * CFG.GRID, y2 = Math.round(s2.gy) * CFG.GRID;
     if (x1 === x2 && y1 === y2) return null;
+    const r = cornerR ?? (corner === 'rounded' ? CFG.CORNER_R : 0);
     switch (routing) {
       case 'direct':     return `M${x1},${y1} L${x2},${y2}`;
-      case 'orthogonal': return this._ortho(x1, y1, x2, y2, corner);
-      default:           return this._diag(x1, y1, x2, y2, corner);
+      case 'orthogonal': return this._ortho(x1, y1, x2, y2, r);
+      default:           return this._diag(x1, y1, x2, y2, r);
     }
   },
 
-  _ortho(x1, y1, x2, y2, corner) {
+  _ortho(x1, y1, x2, y2, r) {
     if (x1 === x2 || y1 === y2) return `M${x1},${y1} L${x2},${y2}`;
-    const r = corner === 'rounded' ? CFG.CORNER_R : 0;
     const sx = Math.sign(x2 - x1), sy = Math.sign(y2 - y1);
     if (r === 0) return `M${x1},${y1} L${x2},${y1} L${x2},${y2}`;
     return `M${x1},${y1} L${x2 - sx*r},${y1} Q${x2},${y1} ${x2},${y1 + sy*r} L${x2},${y2}`;
   },
 
-  _diag(x1, y1, x2, y2, corner) {
+  _diag(x1, y1, x2, y2, r) {
     const dx = x2-x1, dy = y2-y1;
     const adx = Math.abs(dx), ady = Math.abs(dy);
     const sx = Math.sign(dx), sy = Math.sign(dy);
     if (adx === 0 || ady === 0) return `M${x1},${y1} L${x2},${y2}`;
     if (adx === ady)            return `M${x1},${y1} L${x2},${y2}`;
 
-    const r = corner === 'rounded' ? CFG.CORNER_R : 0;
     const D = 1 / Math.SQRT2;
 
     if (adx > ady) {
-      // Diagonal ady, then horizontal
       const cx = x1 + sx*ady, cy = y2;
       if (r === 0) return `M${x1},${y1} L${cx},${cy} L${x2},${y2}`;
       return `M${x1},${y1} L${cx - sx*r*D},${cy - sy*r*D} Q${cx},${cy} ${cx + sx*r},${cy} L${x2},${y2}`;
     } else {
-      // Diagonal adx, then vertical
       const cx = x2, cy = y1 + sy*adx;
       if (r === 0) return `M${x1},${y1} L${cx},${cy} L${x2},${y2}`;
       return `M${x1},${y1} L${cx - sx*r*D},${cy - sy*r*D} Q${cx},${cy} ${cx},${cy + sy*r} L${x2},${y2}`;
@@ -48,11 +46,11 @@ const Router = {
     if (ss.length < 2) return null;
     const segs = [];
     for (let i = 0; i < ss.length - 1; i++) {
-      const s = this.segment(ss[i], ss[i+1], line.routing, line.corner);
+      const s = this.segment(ss[i], ss[i+1], line.routing, line.corner, line.cornerR);
       if (s) segs.push(s);
     }
     if (line.loop && ss.length >= 3) {
-      const s = this.segment(ss[ss.length-1], ss[0], line.routing, line.corner);
+      const s = this.segment(ss[ss.length-1], ss[0], line.routing, line.corner, line.cornerR);
       if (s) segs.push(s);
     }
     return segs.join(' ') || null;

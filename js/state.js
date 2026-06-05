@@ -89,7 +89,7 @@ const state = {
   toWorld(sx, sy) {
     return { x: (sx - this.pan.x) / this.zoom, y: (sy - this.pan.y) / this.zoom };
   },
-  toSVG(gx, gy) { return { x: gx * CFG.GRID, y: gy * CFG.GRID }; },
+  toSVG(gx, gy) { return { x: Math.round(gx) * CFG.GRID, y: Math.round(gy) * CFG.GRID }; },
   snapGrid(wx, wy) {
     if (!this.snapToGrid) return { gx: wx / CFG.GRID, gy: wy / CFG.GRID };
     return { gx: Math.round(wx / CFG.GRID), gy: Math.round(wy / CFG.GRID) };
