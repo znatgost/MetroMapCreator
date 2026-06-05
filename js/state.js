@@ -35,6 +35,8 @@ const state = {
   cursor:  { wx: 0, wy: 0 },
   spacePan: false,
   snapToGrid: true,
+  // Export frame in world (SVG) coords — null = hidden
+  exportFrame: null,  // { x, y, w, h }
   pan:  { x: 80, y: 60 },
   zoom: 1,
 
@@ -130,7 +132,7 @@ const state = {
     this.lines.set(id, {
       id, name: `Line ${this.lines.size + 1}`, color: COLORS[idx],
       width: CFG.LINE_W, routing: 'diagonal', corner: 'rounded',
-      cornerR: CFG.CORNER_R, loop: false, sids: [],
+      loop: false, sids: [],
     });
     return id;
   },

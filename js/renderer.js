@@ -2,6 +2,7 @@
 const Renderer = {
   svg: null, world: null,
   layerLines: null, layerStations: null, layerLabels: null, layerUI: null,
+  layerExportFrame: null,
 
   init() {
     this.svg           = document.getElementById('map-svg');
@@ -9,6 +10,7 @@ const Renderer = {
     this.layerLines    = document.getElementById('layer-lines');
     this.layerStations = document.getElementById('layer-stations');
     this.layerLabels   = document.getElementById('layer-labels');
+    this.layerExportFrame = document.getElementById('layer-export-frame');
     this.layerUI       = document.getElementById('layer-ui');
   },
 
@@ -29,9 +31,83 @@ const Renderer = {
     this.renderLines();
     this.renderStations();
     this.renderLabels();
+    this.renderExportFrame();
     this.renderUI();
     this.updateTransform();
     this._updateEmptyState();
+  },
+
+  // ── Export Frame ──────────────────────────────────────────────────────
+  renderExportFrame() {
+    if (!this.layerExportFrame) return;
+    this.layerExportFrame.innerHTML = '';
+    const f = state.exportFrame;
+    if (!f) return;
+
+    const z = state.zoom;
+    const hs = Math.max(6, 8 / z);  // handle size
+    const sw = Math.max(1, 1.5 / z); // stroke width
+
+    // Semi-transparent overlay outside frame (4 rects)
+    // Skip overlay for simplicity — just draw border
+
+    // Frame border
+    this.layerExportFrame.appendChild(this.el('rect', {
+      x: f.x, y: f.y, width: f.w, height: f.h,
+      fill: 'none', stroke: '#3D72F6',
+      'stroke-width': sw * 2,
+      'pointer-events': 'none',
+    }));
+
+    // Edge hit areas (invisible, for resize cursor)
+    const edges = [
+      { id:'ef-n', x: f.x,           y: f.y - hs,       width: f.w,      height: hs*2,   cursor:'ns-resize',   dir:'n'  },
+      { id:'ef-s', x: f.x,           y: f.y+f.h - hs,   width: f.w,      height: hs*2,   cursor:'ns-resize',   dir:'s'  },
+      { id:'ef-w', x: f.x - hs,      y: f.y,            width: hs*2,     height: f.h,    cursor:'ew-resize',   dir:'w'  },
+      { id:'ef-e', x: f.x+f.w - hs,  y: f.y,            width: hs*2,     height: f.h,    cursor:'ew-resize',   dir:'e'  },
+    ];
+    edges.forEach(e => {
+      this.layerExportFrame.appendChild(this.el('rect', {
+        x: e.x, y: e.y, width: e.width, height: e.height,
+        fill: 'transparent', cursor: e.cursor,
+        'data-ef': e.dir, 'pointer-events': 'all',
+      }));
+    });
+
+    // Corner handles
+    const corners = [
+      { id:'nw', x: f.x,      y: f.y,      cursor:'nwse-resize' },
+      { id:'ne', x: f.x+f.w,  y: f.y,      cursor:'nesw-resize' },
+      { id:'sw', x: f.x,      y: f.y+f.h,  cursor:'nesw-resize' },
+      { id:'se', x: f.x+f.w,  y: f.y+f.h,  cursor:'nwse-resize' },
+    ];
+    corners.forEach(c => {
+      // White fill, blue border
+      this.layerExportFrame.appendChild(this.el('rect', {
+        x: c.x - hs, y: c.y - hs, width: hs*2, height: hs*2,
+        fill: 'white', stroke: '#3D72F6', 'stroke-width': sw*1.5,
+        rx: hs * 0.3,
+        cursor: c.cursor, 'data-ef': c.id, 'pointer-events': 'all',
+      }));
+    });
+
+    // Move handle — center cross
+    const cx = f.x + f.w/2, cy = f.y + f.h/2;
+    this.layerExportFrame.appendChild(this.el('rect', {
+      x: cx - hs*2, y: cy - hs*2, width: hs*4, height: hs*4,
+      fill: 'transparent', cursor: 'move',
+      'data-ef': 'move', 'pointer-events': 'all',
+    }));
+
+    // Label top-left
+    const fs = Math.max(9, 11 / z);
+    const lbl = this.el('text', {
+      x: f.x + 4/z, y: f.y - 5/z,
+      'font-family': 'monospace', 'font-size': fs,
+      fill: '#3D72F6', 'pointer-events': 'none',
+    });
+    lbl.textContent = `${Math.round(f.w)} × ${Math.round(f.h)}`;
+    this.layerExportFrame.appendChild(lbl);
   },
 
   // ── Lines ──────────────────────────────────────────────────────────────
@@ -174,7 +250,7 @@ const Renderer = {
 
     // Drawing preview path
     if (state.drawing.active && aLine && state.drawing.lastSid) {
-      const d = Router.previewPath(state.drawing.lastSid, wx, wy, aLine.routing, aLine.corner, aLine.cornerR);
+      const d = Router.previewPath(state.drawing.lastSid, wx, wy, aLine.routing, aLine.corner);
       if (d) {
         this.layerUI.appendChild(this.el('path', {
           d, stroke: aLine.color, 'stroke-width': aLine.width, fill: 'none',

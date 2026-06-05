@@ -11,26 +11,26 @@ const UI = {
 
     // FAB popup
     const popup = document.getElementById('mob-fab-popup');
-    popup?.addEventListener('click', e => e.stopPropagation());
     document.getElementById('mobile-fab')?.addEventListener('click', e => {
       e.stopPropagation();
-      popup?.toggleAttribute('hidden');
+      if (popup.hasAttribute('hidden')) popup.removeAttribute('hidden');
+      else popup.setAttribute('hidden', '');
     });
     document.getElementById('mob-popup-station')?.addEventListener('click', e => {
       e.stopPropagation();
-      popup?.setAttribute('hidden', '');
+      popup.setAttribute('hidden', '');
       this.setTool('station');
-      this.toast('Tap the map to place a station');
     });
     document.getElementById('mob-popup-line')?.addEventListener('click', e => {
       e.stopPropagation();
-      popup?.setAttribute('hidden', '');
+      popup.setAttribute('hidden', '');
       this.createNewLine();
-      this.openSelectedSheet();
     });
-    document.addEventListener('click', () => {
-      popup?.setAttribute('hidden', '');
-      document.getElementById('tap-popup')?.setAttribute('hidden', '');
+    document.addEventListener('click', e => {
+      if (!e.target.closest?.('#mob-fab-popup') && !e.target.closest?.('#mobile-fab'))
+        popup?.setAttribute('hidden', '');
+      if (!e.target.closest?.('#tap-popup'))
+        document.getElementById('tap-popup')?.setAttribute('hidden', '');
     });
 
     // Tap popup: Settings / Delete
@@ -58,7 +58,7 @@ const UI = {
       if (state.redo()) { Renderer.render(); this.renderLinesList(); this.renderProps(); this.updateUndoRedo(); this.updateDrawingChip(); }
     });
 
-    document.getElementById('btn-export-png')?.addEventListener('click', () => this.openExportDialog());
+    document.getElementById('btn-export-png')?.addEventListener('click', () => this._openExportDialog());
     document.getElementById('btn-export-svg')?.addEventListener('click', () => this.exportSVG());
 
     document.getElementById('btn-undo')?.addEventListener('click', () => {
@@ -81,8 +81,31 @@ const UI = {
     document.getElementById('sheet-backdrop')?.addEventListener('click', () => this._closeSheet());
     document.getElementById('sheet-close')   ?.addEventListener('click', () => this._closeSheet());
 
-    this._initExportDialog();
     this._initSettings();
+    this._initExportDialog();
+  },
+
+  _initExportDialog() {
+    document.getElementById('export-close')?.addEventListener('click', () => {
+      document.getElementById('export-overlay').setAttribute('hidden', '');
+    });
+    document.getElementById('export-overlay')?.addEventListener('click', e => {
+      if (e.target === document.getElementById('export-overlay'))
+        document.getElementById('export-overlay').setAttribute('hidden', '');
+    });
+    document.querySelectorAll('.aspect-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+    document.getElementById('export-confirm')?.addEventListener('click', () => {
+      document.getElementById('export-overlay').setAttribute('hidden', '');
+      const active = document.querySelector('.aspect-btn.active');
+      const ratioStr = active?.dataset.ratio || '';
+      const ratio = ratioStr ? ratioStr.split(':').map(Number) : null;
+      this.exportPNG(ratio);
+    });
   },
 
   // ── Settings ──────────────────────────────────────────────────────────────
@@ -91,7 +114,7 @@ const UI = {
     labels: true, grid: true,
     legend: true, legendLines: true, legendCounts: true,
     bgColor: '#EFF2F7',
-    exportRatio: '',
+    showExportFrame: false, exportRatio: null,
   },
 
   _initSettings() {
@@ -120,6 +143,36 @@ const UI = {
     bind('cfg-legend-lines',  'legendLines',  () => { this.renderLegend(); });
     bind('cfg-legend-counts', 'legendCounts', () => { this.renderLegend(); });
 
+    document.getElementById('cfg-export-frame')?.addEventListener('change', e => {
+      this.mapCfg.showExportFrame = e.target.checked;
+      document.getElementById('export-frame-options').style.display = e.target.checked ? 'block' : 'none';
+      if (e.target.checked && !state.exportFrame) {
+        // Init frame from content bounds
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const s of state.stations.values()) {
+          const { x, y } = state.toSVG(s.gx, s.gy);
+          x0 = Math.min(x0, x); y0 = Math.min(y0, y);
+          x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+        }
+        const pad = 120;
+        state.exportFrame = x0 < Infinity
+          ? { x: x0-pad, y: y0-pad, w: (x1-x0)+pad*2, h: (y1-y0)+pad*2 }
+          : { x: -200, y: -200, w: 800, h: 600 };
+      } else if (!e.target.checked) {
+        state.exportFrame = null;
+      }
+      Renderer.renderExportFrame();
+    });
+
+    document.querySelectorAll('#export-frame-options .aspect-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#export-frame-options .aspect-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.mapCfg.exportRatio = btn.dataset.ratio || null;
+        Renderer.renderExportFrame();
+      });
+    });
+
     document.querySelectorAll('.bg-swatch').forEach(s => {
       s.addEventListener('click', () => {
         this.mapCfg.bgColor = s.dataset.bg;
@@ -128,35 +181,6 @@ const UI = {
         this._applyBg();
       });
     });
-  },
-
-  _initExportDialog() {
-    const overlay = document.getElementById('export-overlay');
-    if (!overlay) return;
-
-    document.getElementById('export-close')?.addEventListener('click', () => {
-      overlay.setAttribute('hidden', '');
-    });
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) overlay.setAttribute('hidden', '');
-    });
-
-    document.querySelectorAll('.aspect-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.mapCfg.exportRatio = btn.dataset.ratio ?? '';
-        document.querySelectorAll('.aspect-btn').forEach(x => x.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
-
-    document.getElementById('export-confirm')?.addEventListener('click', () => {
-      overlay.setAttribute('hidden', '');
-      this.exportPNG(this.mapCfg.exportRatio);
-    });
-  },
-
-  openExportDialog() {
-    document.getElementById('export-overlay')?.removeAttribute('hidden');
   },
 
   _applyGrid() {
@@ -183,7 +207,6 @@ const UI = {
   // ── Tool ─────────────────────────────────────────────────────────────────
   setTool(tool, { keepDrawing = false } = {}) {
     state.tool = tool;
-    if (tool === 'line' && !keepDrawing) this._selectLineForTool();
     document.querySelectorAll('[data-tool]').forEach(b =>
       b.classList.toggle('active', b.dataset.tool === tool)
     );
@@ -194,28 +217,7 @@ const UI = {
       Renderer.renderUI();
       this.updateDrawingChip();
     }
-    if (tool === 'line') {
-      this.renderLinesList();
-      this.renderProps();
-      Renderer.render();
-    }
     this.updateStatus();
-  },
-
-  _selectLineForTool() {
-    if (state.selected?.type === 'line' && state.lines.has(state.selected.id)) {
-      state.activeLine = state.selected.id;
-      return;
-    }
-    if (state.activeLine && state.lines.has(state.activeLine)) {
-      state.selected = { type: 'line', id: state.activeLine };
-      return;
-    }
-    const first = state.lines.keys().next().value;
-    if (first) {
-      state.activeLine = first;
-      state.selected = { type: 'line', id: first };
-    }
   },
 
   // ── New line ──────────────────────────────────────────────────────────────
@@ -275,7 +277,9 @@ const UI = {
       return;
     }
     list.innerHTML = '';
-    for (const line of state.lines.values()) {
+    const lineIds = [...state.lines.keys()];
+    for (let idx = 0; idx < lineIds.length; idx++) {
+      const line = state.lines.get(lineIds[idx]);
       const active = state.activeLine === line.id;
       const div = document.createElement('div');
       div.className = `line-item${active ? ' active' : ''}`;
@@ -283,8 +287,26 @@ const UI = {
         <span class="line-dot" style="background:${line.color}"></span>
         <span class="line-item-name">${this._esc(line.name)}</span>
         <span class="line-count">${line.sids.length}</span>
+        <div class="line-order-btns">
+          <button class="order-btn" data-dir="up" data-lid="${line.id}" title="Move layer up" ${idx===0?'disabled':''}>↑</button>
+          <button class="order-btn" data-dir="down" data-lid="${line.id}" title="Move layer down" ${idx===lineIds.length-1?'disabled':''}>↓</button>
+        </div>
         <button class="del-btn" data-lid="${line.id}" title="Delete line">×</button>
       `;
+      div.querySelectorAll('.order-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const lid = btn.dataset.lid;
+          const dir = btn.dataset.dir;
+          const entries = [...state.lines.entries()];
+          const i = entries.findIndex(([k]) => k === lid);
+          const swapIdx = dir === 'up' ? i - 1 : i + 1;
+          if (swapIdx < 0 || swapIdx >= entries.length) return;
+          [entries[i], entries[swapIdx]] = [entries[swapIdx], entries[i]];
+          state.lines = new Map(entries);
+          Renderer.render(); this.renderLinesList();
+        });
+      });
       div.querySelector('.del-btn').addEventListener('click', e => {
         e.stopPropagation();
         state.snapshot(); this.updateUndoRedo();
@@ -295,8 +317,9 @@ const UI = {
       div.addEventListener('click', () => {
         state.activeLine = line.id;
         state.selected   = { type: 'line', id: line.id };
-        this.renderLinesList(); this.renderProps();
         this.setTool('line');
+        this.renderLinesList();
+        this.renderProps();
         Renderer.render();
       });
       list.appendChild(div);
@@ -349,7 +372,7 @@ const UI = {
     el.innerHTML = `
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <input id="prop-name" class="prop-input prop-name" type="text"
+        <input id="prop-name" class="prop-input" type="text"
           value="${this._esc(s.name)}" placeholder="Station name…">
       </div>
       <hr class="prop-divider">
@@ -369,7 +392,7 @@ const UI = {
       </div>
     `;
 
-    const nameInput = el.querySelector('.prop-name');
+    const nameInput = document.getElementById('prop-name');
     nameInput?.addEventListener('input', e => {
       Editor._markPropsDirty();
       s.name = e.target.value;
@@ -398,12 +421,11 @@ const UI = {
   _lineProps(el) {
     const line = state.lines.get(state.selected.id);
     if (!line) { el.innerHTML = ''; return; }
-    if (line.cornerR == null) line.cornerR = line.corner === 'sharp' ? 0 : CFG.CORNER_R;
 
     el.innerHTML = `
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <input id="prop-lname" class="prop-input prop-lname" type="text" value="${this._esc(line.name)}">
+        <input id="prop-lname" class="prop-input" type="text" value="${this._esc(line.name)}">
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
@@ -415,8 +437,8 @@ const UI = {
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
-        <label class="prop-label">Width &nbsp;<span class="width-value" style="font-weight:400;text-transform:none">${line.width}px</span></label>
-        <input type="range" id="prop-width" class="range-input prop-width" min="3" max="20" step="1" value="${line.width}">
+        <label class="prop-label">Width &nbsp;<span id="wv" style="font-weight:400;text-transform:none">${line.width}px</span></label>
+        <input type="range" id="prop-width" class="range-input" min="3" max="20" step="1" value="${line.width}">
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
@@ -428,35 +450,28 @@ const UI = {
         </div>
       </div>
       <div class="prop-row">
-        <label class="prop-label">Corners</label>
-        <div class="seg-btns">
-          ${['rounded','sharp'].map(c =>
-            `<button class="seg-btn${line.corner===c?' active':''}" data-corner="${c}">${c}</button>`
-          ).join('')}
-        </div>
-      </div>
-      <div class="prop-row">
-        <label class="prop-label">Corner radius &nbsp;<span class="corner-radius-value" style="font-weight:400;text-transform:none">${line.cornerR}px</span></label>
-        <input type="range" class="prop-slider prop-corner-radius" min="0" max="40" step="1" value="${line.cornerR}">
+        <label class="prop-label">Corner Radius <span id="corner-r-val">${line.cornerR ?? CFG.CORNER_R}</span>px</label>
+        <input type="range" id="prop-corner-r" class="prop-slider"
+          min="0" max="40" step="1" value="${line.cornerR ?? CFG.CORNER_R}">
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
         <label class="prop-label">Loop</label>
         <label class="toggle-row">
-          <input type="checkbox" id="prop-loop" class="prop-loop" ${line.loop?'checked':''}>
+          <input type="checkbox" id="prop-loop" ${line.loop?'checked':''}>
           <span class="toggle-track"></span>
           <span class="toggle-text">Circular line</span>
         </label>
       </div>
       <hr class="prop-divider">
       <div class="prop-row">
-        <button id="prop-continue" class="btn-continue prop-continue">▶ Continue drawing this line</button>
+        <button id="prop-continue" class="btn-continue">▶ Continue drawing this line</button>
       </div>
     `;
 
     const snap = () => { Editor._markPropsDirty(); };
 
-    el.querySelector('.prop-lname')?.addEventListener('input', e => {
+    document.getElementById('prop-lname').addEventListener('input', e => {
       snap(); line.name = e.target.value; this.renderLinesList();
     });
 
@@ -469,9 +484,9 @@ const UI = {
       });
     });
 
-    el.querySelector('.prop-width')?.addEventListener('input', e => {
+    document.getElementById('prop-width').addEventListener('input', e => {
       snap(); line.width = +e.target.value;
-      el.querySelector('.width-value').textContent = `${line.width}px`;
+      document.getElementById('wv').textContent = `${line.width}px`;
       Renderer.render();
     });
 
@@ -483,34 +498,20 @@ const UI = {
       });
     });
 
-    el.querySelectorAll('[data-corner]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        snap();
-        line.corner = btn.dataset.corner;
-        line.cornerR = line.corner === 'sharp' ? 0 : (line.cornerR || CFG.CORNER_R);
-        el.querySelector('.prop-corner-radius').value = line.cornerR;
-        el.querySelector('.corner-radius-value').textContent = `${line.cornerR}px`;
-        el.querySelectorAll('[data-corner]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active'); Renderer.render();
-      });
-    });
-
-    el.querySelector('.prop-corner-radius')?.addEventListener('input', e => {
+    document.getElementById('prop-corner-r')?.addEventListener('input', e => {
       snap();
-      line.cornerR = +e.target.value;
-      line.corner = line.cornerR === 0 ? 'sharp' : 'rounded';
-      el.querySelector('.corner-radius-value').textContent = `${line.cornerR}px`;
-      el.querySelectorAll('[data-corner]').forEach(b =>
-        b.classList.toggle('active', b.dataset.corner === line.corner)
-      );
+      const val = parseInt(e.target.value);
+      line.cornerR = val;
+      line.corner  = val > 0 ? 'rounded' : 'sharp';
+      document.getElementById('corner-r-val').textContent = val;
       Renderer.render();
     });
 
-    el.querySelector('.prop-loop')?.addEventListener('change', e => {
+    document.getElementById('prop-loop').addEventListener('change', e => {
       snap(); line.loop = e.target.checked; Renderer.render();
     });
 
-    el.querySelector('.prop-continue')?.addEventListener('click', () => {
+    document.getElementById('prop-continue').addEventListener('click', () => {
       state.activeLine = line.id;
       const lastSid = line.sids[line.sids.length - 1];
       state.drawing = lastSid
@@ -525,10 +526,6 @@ const UI = {
   },
 
   // ── Mobile sheet ──────────────────────────────────────────────────────────
-  openSelectedSheet() {
-    if (this._isMobile() && state.selected) this._openSheet();
-  },
-
   _openSheet() {
     const sheet = document.getElementById('mobile-sheet');
     if (!sheet) return;
@@ -584,27 +581,49 @@ const UI = {
   },
 
   // ── Export PNG ────────────────────────────────────────────────────────────
-  exportPNG(ratio = '') {
-    return this._exportPNGFromBounds(ratio);
+  _openExportDialog() {
+    // If export frame is active, export directly using it
+    if (state.exportFrame) {
+      this.exportPNG(null, state.exportFrame);
+      return;
+    }
+    document.getElementById('export-overlay').removeAttribute('hidden');
+  },
 
+  exportPNG(aspectRatio = null, frame = null) {
     const svg  = document.getElementById('map-svg');
     const rect = svg.getBoundingClientRect();
 
-    // Compute tight bounding box around content (world coords → screen)
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const s of state.stations.values()) {
-      const { x, y } = state.toSVG(s.gx, s.gy);
-      const sx = x * state.zoom + state.pan.x;
-      const sy = y * state.zoom + state.pan.y;
-      x0 = Math.min(x0, sx); y0 = Math.min(y0, sy);
-      x1 = Math.max(x1, sx); y1 = Math.max(y1, sy);
+    let cropX, cropY, cropW, cropH;
+
+    if (frame) {
+      // Convert world (SVG) coords to screen coords
+      cropX = frame.x * state.zoom + state.pan.x;
+      cropY = frame.y * state.zoom + state.pan.y;
+      cropW = frame.w * state.zoom;
+      cropH = frame.h * state.zoom;
+    } else {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const s of state.stations.values()) {
+        const { x, y } = state.toSVG(s.gx, s.gy);
+        const sx = x * state.zoom + state.pan.x;
+        const sy = y * state.zoom + state.pan.y;
+        x0 = Math.min(x0, sx); y0 = Math.min(y0, sy);
+        x1 = Math.max(x1, sx); y1 = Math.max(y1, sy);
+      }
+      const PAD = 80;
+      const hasBounds = x0 < Infinity;
+      cropX = hasBounds ? x0 - PAD : 0;
+      cropY = hasBounds ? y0 - PAD : 0;
+      cropW = hasBounds ? (x1 - x0) + PAD * 2 : rect.width;
+      cropH = hasBounds ? (y1 - y0) + PAD * 2 : rect.height;
+      if (aspectRatio) {
+        const [aw, ah] = aspectRatio;
+        const tr = aw / ah, cr = cropW / cropH;
+        if (cr > tr) { const nh = cropW/tr; cropY -= (nh-cropH)/2; cropH = nh; }
+        else { const nw = cropH*tr; cropX -= (nw-cropW)/2; cropW = nw; }
+      }
     }
-    const PAD = 80;
-    const hasBounds = x0 < Infinity;
-    const cropX = hasBounds ? Math.max(0, x0 - PAD) : 0;
-    const cropY = hasBounds ? Math.max(0, y0 - PAD) : 0;
-    const cropW = hasBounds ? Math.min(rect.width,  x1 - x0 + PAD * 2) : rect.width;
-    const cropH = hasBounds ? Math.min(rect.height, y1 - y0 + PAD * 2) : rect.height;
 
     // Target at least 2560px on the long side
     const LONG = 2560;
@@ -614,6 +633,13 @@ const UI = {
     clone.setAttribute('width',  rect.width);
     clone.setAttribute('height', rect.height);
     clone.querySelector('#world > rect')?.setAttribute('fill', 'none');
+    // Remove cursor styles and hide UI layer (snap indicators, preview)
+    clone.querySelector('#layer-ui')?.setAttribute('display', 'none');
+    clone.querySelector('#layer-export-frame')?.setAttribute('display', 'none');
+    clone.querySelectorAll('[cursor]').forEach(el => el.removeAttribute('cursor'));
+    clone.querySelectorAll('[style*="cursor"]').forEach(el => {
+      el.style.cursor = 'default';
+    });
 
     const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     style.textContent = "@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&display=swap');";
@@ -642,99 +668,6 @@ const UI = {
     img.src = url;
   },
 
-  _exportPNGFromBounds(ratio = '') {
-    const svg = document.getElementById('map-svg');
-    const bounds = this._exportBounds(ratio);
-
-    const clone = svg.cloneNode(true);
-    clone.setAttribute('width', bounds.w);
-    clone.setAttribute('height', bounds.h);
-    clone.setAttribute('viewBox', `0 0 ${bounds.w} ${bounds.h}`);
-    clone.querySelector('#world')?.setAttribute('transform', `translate(${-bounds.x},${-bounds.y}) scale(1)`);
-    clone.querySelector('#world > rect')?.setAttribute('fill', 'none');
-    clone.querySelector('#layer-ui')?.replaceChildren();
-
-    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-    style.textContent = "@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&display=swap');";
-    clone.insertBefore(style, clone.firstChild);
-
-    const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const LONG = 2560;
-      const scale = Math.max(1, LONG / Math.max(bounds.w, bounds.h));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(bounds.w * scale);
-      canvas.height = Math.round(bounds.h * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.scale(scale, scale);
-      ctx.fillStyle = this.mapCfg.bgColor || '#EFF2F7';
-      ctx.fillRect(0, 0, bounds.w, bounds.h);
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-
-      const a = document.createElement('a');
-      a.download = 'metro-map.png';
-      a.href = canvas.toDataURL('image/png', 1.0);
-      a.click();
-      this.toast(`Exported ${canvas.width}x${canvas.height}px`);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      this.toast('PNG export failed - try SVG');
-    };
-    img.src = url;
-  },
-
-  _exportBounds(ratio = '') {
-    const PAD = 80;
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-
-    for (const s of state.stations.values()) {
-      const { x, y } = state.toSVG(s.gx, s.gy);
-      x0 = Math.min(x0, x);
-      y0 = Math.min(y0, y);
-      x1 = Math.max(x1, x);
-      y1 = Math.max(y1, y);
-    }
-
-    if (x0 === Infinity) {
-      const rect = document.getElementById('map-svg').getBoundingClientRect();
-      const topLeft = state.toWorld(0, 0);
-      return { x: topLeft.x, y: topLeft.y, w: rect.width / state.zoom, h: rect.height / state.zoom };
-    }
-
-    x0 -= PAD; y0 -= PAD; x1 += PAD; y1 += PAD;
-
-    const targetRatio = this._parseRatio(ratio);
-    if (targetRatio) {
-      const cx = (x0 + x1) / 2;
-      const cy = (y0 + y1) / 2;
-      let w = x1 - x0;
-      let h = y1 - y0;
-
-      if (w / h > targetRatio) h = w / targetRatio;
-      else w = h * targetRatio;
-
-      x0 = cx - w / 2; x1 = cx + w / 2;
-      y0 = cy - h / 2; y1 = cy + h / 2;
-    }
-
-    return {
-      x: Math.floor(x0),
-      y: Math.floor(y0),
-      w: Math.ceil(x1 - x0),
-      h: Math.ceil(y1 - y0),
-    };
-  },
-
-  _parseRatio(value) {
-    if (!value) return null;
-    const [w, h] = value.split(':').map(Number);
-    return w > 0 && h > 0 ? w / h : null;
-  },
-
   exportSVG() {
     const svg  = document.getElementById('map-svg');
     const rect = svg.getBoundingClientRect();
@@ -758,9 +691,10 @@ const UI = {
 UI.showTapPopup = function(screenX, screenY) {
   const popup = document.getElementById('tap-popup');
   if (!popup) return;
-  popup.removeAttribute('hidden');
   const pw = 160, ph = 90;
   const vw = window.innerWidth, vh = window.innerHeight;
   popup.style.left = Math.min(screenX, vw - pw - 8) + 'px';
   popup.style.top  = Math.max(8, Math.min(screenY - ph - 10, vh - ph - 8)) + 'px';
+  // Delay to avoid being closed immediately by the document click handler
+  setTimeout(() => popup.removeAttribute('hidden'), 10);
 };

@@ -4,7 +4,6 @@ const Editor = {
     down: false, btn: 0,
     sx: 0, sy: 0, moved: false,
     target: null, panStart: null,
-    dragOffset: null,
     dblTimer: 0,
   },
   MOVE_THR: 6,
@@ -77,19 +76,22 @@ const Editor = {
     const isTouchEvent = e.pointerType === 'touch';
     const snapThreshold = isTouchEvent ? CFG.SNAP_D * 3 / state.zoom : CFG.SNAP_D;
     const nearS   = state.nearStation(wx, wy, snapThreshold);
+    const frameEl = e.target.closest?.('[data-ef]');
     const lineEl  = e.target.closest?.('[data-line-id]');
 
-    if (nearS) {
-      const p = state.toSVG(nearS.gx, nearS.gy);
-      this.ptr.target = { type: 'station', id: nearS.id };
-      this.ptr.dragOffset = { x: p.x - wx, y: p.y - wy };
-    } else if (lineEl) {
-      this.ptr.target = { type: 'line', id: lineEl.dataset.lineId };
-      this.ptr.dragOffset = null;
-    } else {
-      this.ptr.target = { type: 'canvas' };
-      this.ptr.dragOffset = null;
+    if (frameEl && state.exportFrame) {
+      this.ptr.target = { type: 'frame', dir: frameEl.dataset.ef,
+        fx: state.exportFrame.x, fy: state.exportFrame.y,
+        fw: state.exportFrame.w, fh: state.exportFrame.h,
+        wx0: wx, wy0: wy };
+    } else if (nearS) {
+      const { x: stx, y: sty } = state.toSVG(nearS.gx, nearS.gy);
+      this.ptr.target = { type: 'station', id: nearS.id,
+        offsetGx: nearS.gx - wx / CFG.GRID,
+        offsetGy: nearS.gy - wy / CFG.GRID };
     }
+    else if (lineEl) this.ptr.target = { type: 'line', id: lineEl.dataset.lineId };
+    else             this.ptr.target = { type: 'canvas' };
   },
 
   // ── Pointer Move ──────────────────────────────────────────────────────────
@@ -156,11 +158,34 @@ const Editor = {
       return;
     }
 
+    if (this.ptr.moved && this.ptr.target?.type === 'frame' && state.exportFrame) {
+      const t = this.ptr.target;
+      const dx = wx - t.wx0, dy = wy - t.wy0;
+      const f = state.exportFrame;
+      const MIN = CFG.GRID * 2;
+      switch (t.dir) {
+        case 'move': f.x = t.fx + dx; f.y = t.fy + dy; break;
+        case 'n':  f.y = t.fy + dy; f.h = Math.max(MIN, t.fh - dy); break;
+        case 's':  f.h = Math.max(MIN, t.fh + dy); break;
+        case 'w':  f.x = t.fx + dx; f.w = Math.max(MIN, t.fw - dx); break;
+        case 'e':  f.w = Math.max(MIN, t.fw + dx); break;
+        case 'nw': f.x = t.fx+dx; f.y = t.fy+dy; f.w = Math.max(MIN,t.fw-dx); f.h = Math.max(MIN,t.fh-dy); break;
+        case 'ne': f.y = t.fy+dy; f.w = Math.max(MIN,t.fw+dx); f.h = Math.max(MIN,t.fh-dy); break;
+        case 'sw': f.x = t.fx+dx; f.w = Math.max(MIN,t.fw-dx); f.h = Math.max(MIN,t.fh+dy); break;
+        case 'se': f.w = Math.max(MIN,t.fw+dx); f.h = Math.max(MIN,t.fh+dy); break;
+      }
+      Renderer.renderExportFrame();
+      return;
+    }
+
     if (this.ptr.moved && this.ptr.target?.type === 'station' && state.tool === 'select') {
       const s = state.stations.get(this.ptr.target.id);
       if (s) {
-        const off = this.ptr.dragOffset ?? { x: 0, y: 0 };
-        const { gx, gy } = state.snapGrid(wx + off.x, wy + off.y);
+        const rawGx = wx / CFG.GRID + (this.ptr.target.offsetGx ?? 0);
+        const rawGy = wy / CFG.GRID + (this.ptr.target.offsetGy ?? 0);
+        const { gx, gy } = state.snapToGrid
+          ? { gx: Math.round(rawGx), gy: Math.round(rawGy) }
+          : { gx: rawGx, gy: rawGy };
         if (s.gx !== gx || s.gy !== gy) {
           if (!this._dragSnapshotted) { state.snapshot(); this._dragSnapshotted = true; UI.updateUndoRedo(); }
           s.gx = gx; s.gy = gy;
@@ -184,7 +209,6 @@ const Editor = {
     this.ptr.down = false;
     this._dragSnapshotted = false;
     this.ptr.panStart = null;
-    this.ptr.dragOffset = null;
 
     if (this.ptr.target?.type === 'pan') {
       document.getElementById('map-svg').style.cursor = state.spacePan ? 'grab' : '';
@@ -202,7 +226,6 @@ const Editor = {
     this.ptr.down = false;
     this._dragSnapshotted = false;
     this.ptr.panStart = null;
-    this.ptr.dragOffset = null;
   },
 
   // ── Double-click: finish line drawing ─────────────────────────────────────
@@ -233,7 +256,7 @@ const Editor = {
         UI.renderProps();
         Renderer.render();
         if (this.ptr.isTouch) {
-          UI.openSelectedSheet();
+          UI.showTapPopup(this.ptr.sx, this.ptr.sy);
         }
         break;
 
@@ -262,7 +285,7 @@ const Editor = {
         UI.renderProps();
         Renderer.render();
         if (this.ptr.isTouch) {
-          UI.openSelectedSheet();
+          UI.showTapPopup(this.ptr.sx, this.ptr.sy);
         }
         break;
 
