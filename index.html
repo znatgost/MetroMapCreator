@@ -115,6 +115,7 @@
           <g id="layer-lines"></g>
           <g id="layer-stations"></g>
           <g id="layer-labels"></g>
+          <g id="layer-export-frame"></g>
           <g id="layer-ui"></g>
         </g>
       </svg>
@@ -313,6 +314,27 @@
             <input type="checkbox" class="settings-toggle" id="cfg-legend-counts" checked>
             <span class="toggle-track"></span>
           </label>
+        </div>
+        <div class="settings-group">
+          <div class="settings-group-title">Export Frame</div>
+          <label class="settings-row">
+            <span class="settings-label">Show export frame</span>
+            <input type="checkbox" class="settings-toggle" id="cfg-export-frame">
+            <span class="toggle-track"></span>
+          </label>
+          <div id="export-frame-options" style="display:none">
+            <div class="settings-group-title" style="margin-top:8px">Aspect Ratio</div>
+            <div class="aspect-grid" style="margin-top:4px">
+              <button class="aspect-btn active" data-ratio="">Auto</button>
+              <button class="aspect-btn" data-ratio="16:9">16:9</button>
+              <button class="aspect-btn" data-ratio="4:3">4:3</button>
+              <button class="aspect-btn" data-ratio="1:1">1:1</button>
+              <button class="aspect-btn" data-ratio="3:2">3:2</button>
+              <button class="aspect-btn" data-ratio="2:1">2:1</button>
+              <button class="aspect-btn" data-ratio="9:16">9:16</button>
+              <button class="aspect-btn" data-ratio="3:4">3:4</button>
+            </div>
+          </div>
         </div>
         <div class="settings-group">
           <div class="settings-group-title">Canvas Background</div>
