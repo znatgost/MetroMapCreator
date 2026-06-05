@@ -34,6 +34,7 @@ const state = {
   drawing: { active: false, lineId: null, lastSid: null },
   cursor:  { wx: 0, wy: 0 },
   spacePan: false,
+  snapToGrid: true,
   pan:  { x: 80, y: 60 },
   zoom: 1,
 
@@ -90,6 +91,7 @@ const state = {
   },
   toSVG(gx, gy) { return { x: gx * CFG.GRID, y: gy * CFG.GRID }; },
   snapGrid(wx, wy) {
+    if (!this.snapToGrid) return { gx: wx / CFG.GRID, gy: wy / CFG.GRID };
     return { gx: Math.round(wx / CFG.GRID), gy: Math.round(wy / CFG.GRID) };
   },
 

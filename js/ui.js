@@ -61,6 +61,7 @@ const UI = {
 
   // ── Settings ──────────────────────────────────────────────────────────────
   mapCfg: {
+    snap: true,
     labels: true, grid: true,
     legend: true, legendLines: true, legendCounts: true,
     bgColor: '#EFF2F7',
@@ -85,6 +86,7 @@ const UI = {
       });
     };
 
+    bind('cfg-snap',          'snap',         () => { state.snapToGrid = this.mapCfg.snap; });
     bind('cfg-labels',        'labels',       () => { Renderer.renderLabels(); });
     bind('cfg-grid',          'grid',         () => { this._applyGrid(); });
     bind('cfg-legend',        'legend',       () => { this.renderLegend(); });
@@ -225,12 +227,7 @@ const UI = {
   },
 
   _isMobile() {
-    const bar = document.querySelector('.mobile-bar');
-    if (!bar) return false;
-    // Check CSS visibility OR touch device with small screen
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    const isNarrow = window.innerWidth <= 900;
-    return getComputedStyle(bar).display !== 'none' || (isTouchDevice && isNarrow);
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   },
 
   // ── Properties panel ─────────────────────────────────────────────────────
@@ -238,15 +235,10 @@ const UI = {
     const desktop = document.getElementById('props-content');
     this._renderPropsInto(desktop);
 
-    if (this._isMobile() && state.selected) {
+    if (state.selected) {
       this._openSheet();
-      return;
-    }
-
-    // Desktop: update sheet if already open
-    const sheet = document.getElementById('mobile-sheet');
-    if (sheet && !sheet.hasAttribute('hidden')) {
-      this._renderPropsInto(document.getElementById('mobile-props-content'));
+    } else {
+      this._closeSheet();
     }
   },
 
