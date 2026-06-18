@@ -13,7 +13,7 @@ const Router = {
       default:           return this._diag(x1, y1, x2, y2, r);
     }
   },
-
+  
   _ortho(x1, y1, x2, y2, r) {
     if (x1 === x2 || y1 === y2) return `M${x1},${y1} L${x2},${y2}`;
     const sx = Math.sign(x2 - x1), sy = Math.sign(y2 - y1);
