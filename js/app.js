@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   state.pan.x = Math.round(rect.width  * 0.12);
   state.pan.y = Math.round(rect.height * 0.10);
 
-  const saved = localStorage.getItem('metro-map-v2');
+  const saved = localStorage.getItem('metro-map-v2');,
   if (saved) {
     try { _loadState(JSON.parse(saved)); }
     catch { _buildDemo(); }
