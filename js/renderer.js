@@ -19,7 +19,7 @@ const Renderer = {
     for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
     return e;
   },
-
+  
   updateTransform() {
     this.world.setAttribute('transform',
       `translate(${state.pan.x},${state.pan.y}) scale(${state.zoom})`);
